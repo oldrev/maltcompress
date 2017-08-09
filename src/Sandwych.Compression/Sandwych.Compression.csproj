@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.3</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0-preview2-25405-01" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Archiving\Rar\" />
+    <Folder Include="Archiving\Tar\" />
+    <Folder Include="Archiving\Zip\" />
+    <Folder Include="Archiving\SevenZip\" />
+    <Folder Include="Cryptography\" />
+  </ItemGroup>
+
+</Project>
