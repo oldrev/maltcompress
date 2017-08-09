@@ -2,10 +2,11 @@
 
 using System;
 using Sandwych.Compression.Algorithms.RangeCoding;
+using System.Collections.Generic;
 
 namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
 {
-    public class LzmaDecoder : ICoder, ISetDecoderProperties // ,System.IO.Stream
+    public class LzmaDecoder : AbstractCoder, ISetDecoderProperties // ,System.IO.Stream
     {
         class LenDecoder
         {
@@ -226,7 +227,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
             m_PosAlignDecoder.Init();
         }
 
-        public void Code(System.IO.Stream inStream, System.IO.Stream outStream, ICodingProgress progress = null)
+        public override void Code(System.IO.Stream inStream, System.IO.Stream outStream, ICodingProgress progress = null)
         {
             Init(inStream, outStream);
 

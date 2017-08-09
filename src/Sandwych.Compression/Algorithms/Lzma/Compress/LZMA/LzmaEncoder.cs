@@ -2,11 +2,12 @@
 
 using System;
 using Sandwych.Compression.Algorithms.RangeCoding;
+using System.Collections.Generic;
 
 namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
 {
 
-    public class LzmaEncoder : ICoder, ISetCoderProperties, IWriteCoderProperties
+    public class LzmaEncoder : AbstractCoder, ISetCoderProperties, IWriteCoderProperties
     {
         enum EMatchFinderType
         {
@@ -1270,7 +1271,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
         }
 
 
-        public void Code(System.IO.Stream inStream, System.IO.Stream outStream, ICodingProgress progress = null)
+        public override void Code(System.IO.Stream inStream, System.IO.Stream outStream, ICodingProgress progress = null)
         {
             _needReleaseMFStream = false;
             try

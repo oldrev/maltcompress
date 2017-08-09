@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Sandwych.Compression.Algorithms.Bwt
 {
-    public class BwtDecoder : ICoder
+    public class BwtDecoder : AbstractCoder
     {
         private int[] _buckets;
         private int[] _indices;
 
-        public void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
         {
             throw new NotImplementedException();
         }

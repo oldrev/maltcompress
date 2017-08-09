@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Sandwych.Compression
 {
-    public sealed class PassThroughCoder : ICoder
+    public sealed class PassThroughCoder : AbstractCoder
     {
         private readonly Lazy<byte[]> _buffer;
 
@@ -14,7 +14,7 @@ namespace Sandwych.Compression
             _buffer = new Lazy<byte[]>(() => new byte[bufferSize], true);
         }
 
-        public void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
         {
             long processedSize = 0;
             for (;;)

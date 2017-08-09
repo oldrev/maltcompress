@@ -8,12 +8,12 @@ using Sandwych.Compression.Algorithms;
 
 namespace Sandwych.Compression.Algorithms.Bwt
 {
-    public class BwtEncoder : ICoder
+    public class BwtEncoder : AbstractCoder
     {
         public const int DefaultBlockSize = 1024 * 1024 * 2;
         private int[] _bucket;
 
-        public void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
         {
             var inBuf = new byte[DefaultBlockSize];
             var outBuf = new byte[inBuf.Length];

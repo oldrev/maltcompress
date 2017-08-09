@@ -9,7 +9,7 @@ using Sandwych.Compression.IO;
 namespace Sandwych.Compression
 {
 
-    public sealed class MultiThreadPipedCoder : ICoder
+    public sealed class MultiThreadPipedCoder : AbstractCoder
     {
         private readonly ICoder[] _coders;
         private readonly List<StreamConnector> _connectors;
@@ -92,7 +92,7 @@ namespace Sandwych.Compression
             }
         }
 
-        public void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
         {
             this.Reset();
             _externalProgress = progress;

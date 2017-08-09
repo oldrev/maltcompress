@@ -10,11 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Archiving\Rar\" />
-    <Folder Include="Archiving\Tar\" />
-    <Folder Include="Archiving\Zip\" />
-    <Folder Include="Archiving\SevenZip\" />
-    <Folder Include="Cryptography\" />
+    <Folder Include="Archives\Rar\" />
+    <Folder Include="Archives\Tar\" />
+    <Folder Include="Archives\Zip\" />
+    <Folder Include="Archives\SevenZip\" />
   </ItemGroup>
 
 </Project>
