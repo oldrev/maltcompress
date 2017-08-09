@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Sandwych.Compression.Compression.Lzma.Compression.LZ
+namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZ
 {
 	interface IInWindowStream
 	{

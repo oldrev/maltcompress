@@ -1,6 +1,6 @@
 using System;
 
-namespace Sandwych.Compression.Compression.Common.RangeCoder
+namespace Sandwych.Compression.Algorithms.RangeCoding
 {
     struct BitEncoder
     {
@@ -86,7 +86,7 @@ namespace Sandwych.Compression.Compression.Common.RangeCoder
 
         public void Init() { Prob = kBitModelTotal >> 1; }
 
-        public uint Decode(RangeCoder.RangeDecoder rangeDecoder)
+        public uint Decode(RangeCoding.RangeDecoder rangeDecoder)
         {
             uint newBound = (uint)(rangeDecoder.Range >> kNumBitModelTotalBits) * (uint)Prob;
             if (rangeDecoder.Code < newBound)

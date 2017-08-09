@@ -1,6 +1,6 @@
 using System;
 
-namespace Sandwych.Compression.Compression.Common.RangeCoder
+namespace Sandwych.Compression.Algorithms.RangeCoding
 {
     public class RangeEncoder
     {

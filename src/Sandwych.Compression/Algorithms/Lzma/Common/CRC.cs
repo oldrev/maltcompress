@@ -1,6 +1,6 @@
 // Common/CRC.cs
 
-namespace Sandwych.Compression.Compression.Lzma
+namespace Sandwych.Compression.Algorithms.Lzma
 {
 	class CRC
 	{

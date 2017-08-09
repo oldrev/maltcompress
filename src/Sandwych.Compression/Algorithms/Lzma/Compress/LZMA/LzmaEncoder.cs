@@ -1,10 +1,9 @@
 // LzmaEncoder.cs
 
 using System;
-using Sandwych.Compression.Compression.Common;
-using Sandwych.Compression.Compression.Common.RangeCoder;
+using Sandwych.Compression.Algorithms.RangeCoding;
 
-namespace Sandwych.Compression.Compression.Lzma.Compression.LZMA
+namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
 {
 
     public class LzmaEncoder : ICoder, ISetCoderProperties, IWriteCoderProperties

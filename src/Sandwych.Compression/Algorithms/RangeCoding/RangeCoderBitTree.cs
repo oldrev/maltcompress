@@ -1,6 +1,6 @@
 using System;
 
-namespace Sandwych.Compression.Compression.Common.RangeCoder
+namespace Sandwych.Compression.Algorithms.RangeCoding
 {
     struct BitTreeEncoder
     {
@@ -117,7 +117,7 @@ namespace Sandwych.Compression.Compression.Common.RangeCoder
                 Models[i].Init();
         }
 
-        public uint Decode(RangeCoder.RangeDecoder rangeDecoder)
+        public uint Decode(RangeCoding.RangeDecoder rangeDecoder)
         {
             uint m = 1;
             for (int bitIndex = NumBitLevels; bitIndex > 0; bitIndex--)
@@ -125,7 +125,7 @@ namespace Sandwych.Compression.Compression.Common.RangeCoder
             return m - ((uint)1 << NumBitLevels);
         }
 
-        public uint ReverseDecode(RangeCoder.RangeDecoder rangeDecoder)
+        public uint ReverseDecode(RangeCoding.RangeDecoder rangeDecoder)
         {
             uint m = 1;
             uint symbol = 0;
@@ -140,7 +140,7 @@ namespace Sandwych.Compression.Compression.Common.RangeCoder
         }
 
         public static uint ReverseDecode(BitDecoder[] Models, UInt32 startIndex,
-            RangeCoder.RangeDecoder rangeDecoder, int NumBitLevels)
+            RangeCoding.RangeDecoder rangeDecoder, int NumBitLevels)
         {
             uint m = 1;
             uint symbol = 0;

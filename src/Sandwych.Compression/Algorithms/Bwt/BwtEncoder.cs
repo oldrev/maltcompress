@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using Sandwych.Compression.Algorithms;
 
-namespace Sandwych.Compression.Compression.Bwt
+namespace Sandwych.Compression.Algorithms.Bwt
 {
     public class BwtEncoder : ICoder
     {

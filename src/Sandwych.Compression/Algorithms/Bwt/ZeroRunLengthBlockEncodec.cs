@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sandwych.Compression.Compression.Bwt
+namespace Sandwych.Compression.Algorithms.Bwt
 {
 
     public class ZeroRunLengthBlockEncodec : IBlockCodec
