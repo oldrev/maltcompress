@@ -7,9 +7,9 @@ namespace Sandwych.Compression.IO
 {
     internal class PipedDownStream : Stream
     {
-        private readonly StreamConnector _pipe;
+        private readonly DefaultStreamConnection _pipe;
 
-        public PipedDownStream(StreamConnector pipe)
+        public PipedDownStream(DefaultStreamConnection pipe)
         {
             _pipe = pipe;
         }
@@ -51,8 +51,6 @@ namespace Sandwych.Compression.IO
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             _pipe.OnDownStreamClosed();
         }
     }

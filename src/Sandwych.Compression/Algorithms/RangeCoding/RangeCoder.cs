@@ -28,6 +28,7 @@ namespace Sandwych.Compression.Algorithms.RangeCoding
         public void Init()
         {
             StartPosition = Stream.Position;
+            //StartPosition = 0;
 
             Low = 0;
             Range = 0xFFFFFFFF;

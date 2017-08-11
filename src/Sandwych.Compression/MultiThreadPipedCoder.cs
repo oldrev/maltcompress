@@ -12,7 +12,7 @@ namespace Sandwych.Compression
     public sealed class MultiThreadPipedCoder : AbstractCoder
     {
         private readonly ICoder[] _coders;
-        private readonly List<StreamConnector> _connectors;
+        private readonly List<IStreamConnection> _connections;
         private readonly List<(Thread, CodingThreadInfo)> _threads;
         private long _processedInSize;
         private long _processedOutSize;
@@ -64,16 +64,16 @@ namespace Sandwych.Compression
             {
                 _threads = new List<(Thread, CodingThreadInfo)>(_coders.Length);
 
-                var connectorCount = coders.Count() - 1;
-                _connectors = new List<StreamConnector>(connectorCount);
-                for (int i = 0; i < connectorCount; i++)
+                var connectionCount = coders.Count() - 1;
+                _connections = new List<IStreamConnection>(connectionCount);
+                for (int i = 0; i < connectionCount; i++)
                 {
-                    _connectors.Add(new StreamConnector());
+                    _connections.Add(new DefaultStreamConnection());
                 }
             }
             else
             {
-                _connectors = null;
+                _connections = null;
             }
 
         }
@@ -83,11 +83,11 @@ namespace Sandwych.Compression
             _externalProgress = null;
             _processedInSize = 0;
             _processedOutSize = 0;
-            if (_connectors != null)
+            if (_connections != null)
             {
-                foreach (var connector in _connectors)
+                foreach (var connector in _connections)
                 {
-                    connector.Reinit();
+                    connector.Reset();
                 }
             }
         }
@@ -102,7 +102,8 @@ namespace Sandwych.Compression
                 this.CreateAllThreads(inStream, outStream);
 
                 //启动所有编码线程
-                foreach (var t in _threads)
+                //这里为了安全考虑，需要从反向的开始，确保所有的线程都是先停止，再由最上游的触发
+                foreach (var t in _threads.Reverse<(Thread, CodingThreadInfo)>())
                 {
                     t.Item1.Start(t.Item2);
                 }
@@ -121,18 +122,18 @@ namespace Sandwych.Compression
             _threads.Clear();
 
             //first pair
-            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.First(), inStream, _connectors.First().UpStream, new ProcessedInSizeCodingProgress(this))));
+            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.First(), inStream, _connections.First().UpStream, new ProcessedInSizeCodingProgress(this))));
             //last pair
-            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.Last(), _connectors.Last().DownStream, outStream, new ProcessedOutSizeCodingProgress(this))));
+            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.Last(), _connections.Last().DownStream, outStream, new ProcessedOutSizeCodingProgress(this))));
 
-            if (_connectors.Count > 1)
+            if (_connections.Count > 1)
             {
                 var coders = _coders.Skip(1).Take(_coders.Count() - 2); //去掉头尾的
                 var connectorIndex = 0;
                 foreach (var coder in coders)
                 {
-                    var connector = _connectors[connectorIndex];
-                    var nextConnector = _connectors[connectorIndex + 1];
+                    var connector = _connections[connectorIndex];
+                    var nextConnector = _connections[connectorIndex + 1];
 
                     _threads.Add((new Thread(CodeProc), new CodingThreadInfo(coder, connector.DownStream, nextConnector.UpStream, null)));
                     connectorIndex++;

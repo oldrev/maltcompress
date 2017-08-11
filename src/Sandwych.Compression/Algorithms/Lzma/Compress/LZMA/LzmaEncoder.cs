@@ -1,6 +1,7 @@
 // LzmaEncoder.cs
 
 using System;
+using System.IO;
 using Sandwych.Compression.Algorithms.RangeCoding;
 using System.Collections.Generic;
 
@@ -9,6 +10,8 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
 
     public class LzmaEncoder : AbstractCoder, ISetCoderProperties, IWriteCoderProperties
     {
+        private const int DefaultWriterBufferSize = 1024 * 64;
+
         enum EMatchFinderType
         {
             BT2,
@@ -1247,13 +1250,12 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
             ReleaseOutStream();
         }
 
-        void SetStreams(System.IO.Stream inStream, System.IO.Stream outStream,
-                Int64 inSize, Int64 outSize)
+        void SetStreams(Stream inStream, Stream outStream, int inSize, int outSize)
         {
             _inStream = inStream;
             _finished = false;
             Create();
-            SetOutStream(outStream);
+            SetOutStream(new BufferedStream(outStream, DefaultWriterBufferSize));
             Init();
 
             // if (!_fastMode)

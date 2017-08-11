@@ -10,7 +10,7 @@ namespace Sandwych.Compression.Demo
         static void Main(string[] args)
         {
 
-            var pipedCoder = new MultiThreadPipedCoder(new LzmaEncoder());
+            var pipedCoder = new MultiThreadPipedCoder(new PassThroughCoder(), new PassThroughCoder(), new LzmaEncoder(), new PassThroughCoder());
             long inputSize = 0;
             long outputSize = 0;
             using (var inStream = File.OpenRead(@"c:\tmp\test.tar"))

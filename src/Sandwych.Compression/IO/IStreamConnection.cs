@@ -5,9 +5,10 @@ using System.IO;
 
 namespace Sandwych.Compression.IO
 {
-    public interface IStreamConnector
+    public interface IStreamConnection
     {
         Stream UpStream { get; }
         Stream DownStream { get; }
+        void Reset();
     }
 }
