@@ -4,8 +4,8 @@ namespace Sandwych.Compression.Algorithms.RangeCoding
 {
     struct BitTreeEncoder
     {
-        BitEncoder[] Models;
-        int NumBitLevels;
+        public BitEncoder[] Models { get; }
+        public int NumBitLevels { get; }
 
         public BitTreeEncoder(int numBitLevels)
         {

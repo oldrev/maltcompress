@@ -112,8 +112,8 @@ namespace Sandwych.Compression
             {
                 this.CreateAllThreads(inStream, outStream);
 
-                //启动所有编码线程
-                //这里为了安全考虑，需要从反向的开始，确保所有的线程都是先停止，再由最上游的触发
+                // Start all encoding/decoding threads
+                // For the safty reason, we starts those threads in a reversed direction
                 var reversedThreads = _threads.Reverse<ThreadPair>();
                 foreach (var t in reversedThreads)
                 {
@@ -140,7 +140,7 @@ namespace Sandwych.Compression
 
             if (_connections.Count > 1)
             {
-                var coders = _coders.Skip(1).Take(_coders.Count() - 2); //去掉头尾的
+                var coders = _coders.Skip(1).Take(_coders.Count() - 2); //removed head and tail
                 var connectorIndex = 0;
                 foreach (var coder in coders)
                 {

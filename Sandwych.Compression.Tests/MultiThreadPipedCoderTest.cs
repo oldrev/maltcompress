@@ -18,6 +18,8 @@ namespace Sandwych.Compression.Tests
 
             using(var inStream = new MemoryStream(sourceData, false))
             using (var outStream = new MemoryStream()) {
+
+                //Yeah, let's do some multithreaded encoding:
                 pipedCoder.Code(inStream, outStream);
                 Assert.Equal(inStream.Length, outStream.Length);
                 Assert.Equal(inStream.ToArray(), outStream.ToArray());

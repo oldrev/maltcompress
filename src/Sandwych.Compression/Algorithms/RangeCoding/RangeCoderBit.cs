@@ -6,11 +6,11 @@ namespace Sandwych.Compression.Algorithms.RangeCoding
     {
         public const int kNumBitModelTotalBits = 11;
         public const uint kBitModelTotal = (1 << kNumBitModelTotalBits);
-        const int kNumMoveBits = 5;
-        const int kNumMoveReducingBits = 2;
+        private const int kNumMoveBits = 5;
+        private const int kNumMoveReducingBits = 2;
         public const int kNumBitPriceShiftBits = 6;
 
-        uint Prob;
+        private uint Prob;
 
         public void Init() { Prob = kBitModelTotal >> 1; }
 

@@ -2,14 +2,14 @@ using System;
 
 namespace Sandwych.Compression.Algorithms.RangeCoding
 {
-    public class RangeEncoder
+    public struct RangeEncoder
     {
         public const uint kTopValue = (1 << 24);
 
         System.IO.Stream Stream;
 
-        public UInt64 Low;
-        public uint Range;
+        public UInt64 Low { get; set; }
+        public uint Range { get; set; }
         uint _cacheSize;
         byte _cache;
 
@@ -120,11 +120,11 @@ namespace Sandwych.Compression.Algorithms.RangeCoding
         }
     }
 
-    public class RangeDecoder
+    public struct RangeDecoder
     {
         public const uint kTopValue = (1 << 24);
-        public uint Range;
-        public uint Code;
+        public uint Range { get; set; }
+        public uint Code { get; set; }
         // public Buffer.InBuffer Stream = new Buffer.InBuffer(1 << 16);
         public System.IO.Stream Stream;
 
