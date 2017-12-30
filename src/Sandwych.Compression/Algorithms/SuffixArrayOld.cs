@@ -24,6 +24,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System;
+
 namespace Sandwych.Compression.Algorithms
 {
 
@@ -109,7 +111,7 @@ namespace Sandwych.Compression.Algorithms
     /// <summary>
     /// An implementation of the induced sorting based suffix array construction algorithm.
     /// </summary>
-    public static class SuffixArray
+    public static class SuffixArrayOld
     {
         private const int MINBUCKETSIZE = 256;
 
@@ -119,16 +121,18 @@ namespace Sandwych.Compression.Algorithms
             {
                 C[i] = 0;
             }
+
             for (int i = 0; i < n; ++i)
             {
-                C[T[i]] = C[T[i]] + 1;
+                var ti = T[i];
+                C[ti] = C[ti] + 1;
             }
         }
 
         private static void GetBuckets(IArraySlice C, IArraySlice B, int k, bool end)
         {
             int i, sum = 0;
-            if (end != false)
+            if (end)
             {
                 for (i = 0; i < k; ++i)
                 {
@@ -158,14 +162,21 @@ namespace Sandwych.Compression.Algorithms
             }
             GetBuckets(C, B, k, false); /* find starts of buckets */
             j = n - 1;
-            b = B[c1 = T[j]];
+            c1 = T[j];
+            b = B[c1];
             --j;
             SA[b++] = (T[j] < c1) ? ~j : j;
             for (i = 0; i < n; ++i)
             {
                 if (0 < (j = SA[i]))
                 {
-                    if ((c0 = T[j]) != c1) { B[c1] = b; b = B[c1 = c0]; }
+                    c0 = T[j];
+                    if (c0 != c1)
+                    {
+                        B[c1] = b;
+                        c1 = c0;
+                        b = B[c1];
+                    }
                     --j;
                     SA[b++] = (T[j] < c1) ? ~j : j;
                     SA[i] = 0;
@@ -176,9 +187,13 @@ namespace Sandwych.Compression.Algorithms
                 }
             }
             /* compute SAs */
-            if (C == B) { GetCounts(T, C, n, k); }
+            if (C == B)
+            {
+                GetCounts(T, C, n, k);
+            }
             GetBuckets(C, B, k, true); /* find ends of buckets */
-            for (i = n - 1, b = B[c1 = 0]; 0 <= i; --i)
+            c1 = 0;
+            for (i = n - 1, b = B[c1]; 0 <= i; --i)
             {
                 if (0 < (j = SA[i]))
                 {
@@ -213,14 +228,25 @@ namespace Sandwych.Compression.Algorithms
 
             /* store the length of all substrings */
             i = n - 1; j = n - 1; c0 = T[n - 1];
-            do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+            do
+            {
+                c1 = c0;
+            } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+
             for (; 0 <= i;)
             {
-                do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) <= c1));
+                do
+                {
+                    c1 = c0;
+                } while ((0 <= --i) && ((c0 = T[i]) <= c1));
                 if (0 <= i)
                 {
-                    SA[m + ((i + 1) >> 1)] = j - i; j = i + 1;
-                    do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+                    SA[m + ((i + 1) >> 1)] = j - i;
+                    j = i + 1;
+                    do
+                    {
+                        c1 = c0;
+                    } while ((0 <= --i) && ((c0 = T[i]) >= c1));
                 }
             }
 
@@ -258,7 +284,10 @@ namespace Sandwych.Compression.Algorithms
             int b, i, j;
             int c0, c1;
             /* compute SAl */
-            if (C == B) { GetCounts(T, C, n, k); }
+            if (C == B)
+            {
+                GetCounts(T, C, n, k);
+            }
             GetBuckets(C, B, k, false); /* find starts of buckets */
             j = n - 1;
             b = B[c1 = T[j]];
@@ -272,7 +301,8 @@ namespace Sandwych.Compression.Algorithms
                     if ((c0 = T[--j]) != c1)
                     {
                         B[c1] = b;
-                        b = B[c1 = c0];
+                        c1 = c0;
+                        b = B[c1];
                     }
                     SA[b++] = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
                 }
@@ -290,7 +320,8 @@ namespace Sandwych.Compression.Algorithms
                     if ((c0 = T[--j]) != c1)
                     {
                         B[c1] = b;
-                        b = B[c1 = c0];
+                        c1 = c0;
+                        b = B[c1];
                     }
                     SA[--b] = ((j == 0) || (T[j - 1] > c1)) ? ~j : j;
                 }
@@ -300,6 +331,7 @@ namespace Sandwych.Compression.Algorithms
                 }
             }
         }
+
         private static int ComputeBwt(IArraySlice T, int[] SA, IArraySlice C, IArraySlice B, int n, int k)
         {
             int b, i, j, pidx = -1;
@@ -311,7 +343,8 @@ namespace Sandwych.Compression.Algorithms
             }
             GetBuckets(C, B, k, false); /* find starts of buckets */
             j = n - 1;
-            b = B[c1 = T[j]];
+            c1 = T[j];
+            b = B[c1];
             SA[b++] = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
             for (i = 0; i < n; ++i)
             {
@@ -344,7 +377,9 @@ namespace Sandwych.Compression.Algorithms
                     SA[i] = (c0 = T[--j]);
                     if (c0 != c1)
                     {
-                        B[c1] = b; b = B[c1 = c0];
+                        B[c1] = b;
+                        c1 = c0;
+                        b = B[];
                     }
                     SA[--b] = ((0 < j) && (T[j - 1] > c1)) ? ~((int)T[j - 1]) : j;
                 }
@@ -372,15 +407,35 @@ namespace Sandwych.Compression.Algorithms
             if (k <= MINBUCKETSIZE)
             {
                 C = new IntArraySlice(new int[k], 0);
-                if (k <= fs) { B = new IntArraySlice(SA, n + fs - k); flags = 1; }
-                else { B = new IntArraySlice(new int[k], 0); flags = 3; }
+                if (k <= fs)
+                {
+                    B = new IntArraySlice(SA, n + fs - k);
+                    flags = 1;
+                }
+                else
+                {
+                    B = new IntArraySlice(new int[k], 0);
+                    flags = 3;
+                }
             }
             else if (k <= fs)
             {
                 C = new IntArraySlice(SA, n + fs - k);
-                if (k <= (fs - k)) { B = new IntArraySlice(SA, n + fs - k * 2); flags = 0; }
-                else if (k <= (MINBUCKETSIZE * 4)) { B = new IntArraySlice(new int[k], 0); flags = 2; }
-                else { B = C; flags = 8; }
+                if (k <= (fs - k))
+                {
+                    B = new IntArraySlice(SA, n + fs - k * 2);
+                    flags = 0;
+                }
+                else if (k <= (MINBUCKETSIZE * 4))
+                {
+                    B = new IntArraySlice(new int[k], 0);
+                    flags = 2;
+                }
+                else
+                {
+                    B = C;
+                    flags = 8;
+                }
             }
             else
             {
@@ -391,17 +446,38 @@ namespace Sandwych.Compression.Algorithms
             /* stage 1: reduce the problem by at least 1/2
                sort all the LMS-substrings */
             GetCounts(T, C, n, k); GetBuckets(C, B, k, true); /* find ends of buckets */
-            for (i = 0; i < n; ++i) { SA[i] = 0; }
-            b = -1; i = n - 1; j = n; m = 0; c0 = T[n - 1];
-            do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+            for (i = 0; i < n; ++i)
+            {
+                SA[i] = 0;
+            }
+            b = -1;
+            i = n - 1;
+            j = n;
+            m = 0;
+            c0 = T[n - 1];
+            do
+            {
+                c1 = c0;
+            } while ((0 <= --i) && ((c0 = T[i]) >= c1));
             for (; 0 <= i;)
             {
-                do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) <= c1));
+                do
+                {
+                    c1 = c0;
+                } while ((0 <= --i) && ((c0 = T[i]) <= c1));
                 if (0 <= i)
                 {
-                    if (0 <= b) { SA[b] = j; }
-                    b = --B[c1]; j = i; ++m;
-                    do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+                    if (0 <= b)
+                    {
+                        SA[b] = j;
+                    }
+                    b = --B[c1];
+                    j = i;
+                    ++m;
+                    do
+                    {
+                        c1 = c0;
+                    } while ((0 <= --i) && ((c0 = T[i]) >= c1));
                 }
             }
             if (1 < m)
@@ -423,41 +499,78 @@ namespace Sandwych.Compression.Algorithms
                recurse if names are not yet unique */
             if (name < m)
             {
-                if ((flags & 4) != 0) { C = null; B = null; }
-                if ((flags & 2) != 0) { B = null; }
+                if ((flags & 4) != 0)
+                {
+                    C = null;
+                    B = null;
+                }
+                if ((flags & 2) != 0)
+                {
+                    B = null;
+                }
                 newfs = (n + fs) - (m * 2);
                 if ((flags & (1 | 4 | 8)) == 0)
                 {
-                    if ((k + name) <= newfs) { newfs -= k; }
-                    else { flags |= 8; }
+                    if ((k + name) <= newfs)
+                    {
+                        newfs -= k;
+                    }
+                    else
+                    {
+                        flags |= 8;
+                    }
                 }
                 for (i = m + (n >> 1) - 1, j = m * 2 + newfs - 1; m <= i; --i)
                 {
-                    if (SA[i] != 0) { SA[j--] = SA[i] - 1; }
+                    if (SA[i] != 0)
+                    {
+                        SA[j--] = SA[i] - 1;
+                    }
                 }
                 RA = new IntArraySlice(SA, m + newfs);
                 SaisMain(RA, SA, newfs, m, name, false);
                 RA = null;
 
                 i = n - 1; j = m * 2 - 1; c0 = T[n - 1];
-                do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+                do
+                {
+                    c1 = c0;
+                } while ((0 <= --i) && ((c0 = T[i]) >= c1));
                 for (; 0 <= i;)
                 {
-                    do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) <= c1));
+                    do
+                    {
+                        c1 = c0;
+                    } while ((0 <= --i) && ((c0 = T[i]) <= c1));
                     if (0 <= i)
                     {
                         SA[j--] = i + 1;
-                        do { c1 = c0; } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+                        do
+                        {
+                            c1 = c0;
+                        } while ((0 <= --i) && ((c0 = T[i]) >= c1));
                     }
                 }
 
-                for (i = 0; i < m; ++i) { SA[i] = SA[m + SA[i]]; }
-                if ((flags & 4) != 0) { C = B = new IntArraySlice(new int[k], 0); }
-                if ((flags & 2) != 0) { B = new IntArraySlice(new int[k], 0); }
+                for (i = 0; i < m; ++i)
+                {
+                    SA[i] = SA[m + SA[i]];
+                }
+                if ((flags & 4) != 0)
+                {
+                    C = B = new IntArraySlice(new int[k], 0);
+                }
+                if ((flags & 2) != 0)
+                {
+                    B = new IntArraySlice(new int[k], 0);
+                }
             }
 
             /* stage 3: induce the result for the original problem */
-            if ((flags & 8) != 0) { GetCounts(T, C, n, k); }
+            if ((flags & 8) != 0)
+            {
+                GetCounts(T, C, n, k);
+            }
             /* put all left-most S characters into their buckets */
             if (1 < m)
             {
@@ -466,19 +579,35 @@ namespace Sandwych.Compression.Algorithms
                 do
                 {
                     q = B[c0 = c1];
-                    while (q < j) { SA[--j] = 0; }
+                    while (q < j)
+                    {
+                        SA[--j] = 0;
+                    }
                     do
                     {
                         SA[--j] = p;
-                        if (--i < 0) { break; }
+                        if (--i < 0)
+                        {
+                            break;
+                        }
                         p = SA[i];
                     } while ((c1 = T[p]) == c0);
                 } while (0 <= i);
-                while (0 < j) { SA[--j] = 0; }
+                while (0 < j)
+                {
+                    SA[--j] = 0;
+                }
             }
-            if (isbwt == false) { InduceSA(T, SA, C, B, n, k); }
-            else { pidx = ComputeBwt(T, SA, C, B, n, k); }
-            C = null; B = null;
+            if (!isbwt)
+            {
+                InduceSA(T, SA, C, B, n, k);
+            }
+            else
+            {
+                pidx = ComputeBwt(T, SA, C, B, n, k);
+            }
+            C = null;
+            B = null;
             return pidx;
         }
 
@@ -493,9 +622,18 @@ namespace Sandwych.Compression.Algorithms
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
         public static int SuffixSort(byte[] T, int[] SA, int n)
         {
-            if ((T == null) || (SA == null) ||
-                (T.Length < n) || (SA.Length < n)) { return -1; }
-            if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
+            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    SA[0] = 0;
+                }
+                return 0;
+            }
             return SaisMain(new ByteArraySlice(T, 0), SA, 0, n, 256, false);
         }
         /* char */
@@ -508,9 +646,18 @@ namespace Sandwych.Compression.Algorithms
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
         public static int SuffixSort(char[] T, int[] SA, int n)
         {
-            if ((T == null) || (SA == null) ||
-                (T.Length < n) || (SA.Length < n)) { return -1; }
-            if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
+            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    SA[0] = 0;
+                }
+                return 0;
+            }
             return SaisMain(new CharArraySlice(T, 0), SA, 0, n, 65536, false);
         }
         /* int */
@@ -524,10 +671,18 @@ namespace Sandwych.Compression.Algorithms
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
         public static int sufsort(int[] T, int[] SA, int n, int k)
         {
-            if ((T == null) || (SA == null) ||
-                (T.Length < n) || (SA.Length < n) ||
-               (k <= 0)) { return -1; }
-            if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
+            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n) || (k <= 0))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    SA[0] = 0;
+                }
+                return 0;
+            }
             return SaisMain(new IntArraySlice(T, 0), SA, 0, n, k, false);
         }
 
@@ -541,9 +696,18 @@ namespace Sandwych.Compression.Algorithms
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
         public static int SuffixSort(string T, int[] SA, int n)
         {
-            if ((T == null) || (SA == null) ||
-                (T.Length < n) || (SA.Length < n)) { return -1; }
-            if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
+            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    SA[0] = 0;
+                }
+                return 0;
+            }
             return SaisMain(new StringArraySlice(T, 0), SA, 0, n, 65536, false);
         }
 
@@ -560,13 +724,28 @@ namespace Sandwych.Compression.Algorithms
         public static int Bwt(byte[] T, byte[] U, int[] A, int n)
         {
             int i, pidx;
-            if ((T == null) || (U == null) || (A == null) ||
-               (T.Length < n) || (U.Length < n) || (A.Length < n)) { return -1; }
-            if (n <= 1) { if (n == 1) { U[0] = T[0]; } return n; }
+            if ((T == null) || (U == null) || (A == null) || (T.Length < n) || (U.Length < n) || (A.Length < n))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    U[0] = T[0];
+                }
+                return n;
+            }
             pidx = SaisMain(new ByteArraySlice(T, 0), A, 0, n, 256, true);
             U[0] = T[n - 1];
-            for (i = 0; i < pidx; ++i) { U[i + 1] = (byte)A[i]; }
-            for (i += 1; i < n; ++i) { U[i] = (byte)A[i]; }
+            for (i = 0; i < pidx; ++i)
+            {
+                U[i + 1] = (byte)A[i];
+            }
+            for (i += 1; i < n; ++i)
+            {
+                U[i] = (byte)A[i];
+            }
             return pidx + 1;
         }
 
@@ -625,14 +804,28 @@ namespace Sandwych.Compression.Algorithms
         public static int Bwt(int[] T, int[] U, int[] A, int n, int k)
         {
             int i, pidx;
-            if ((T == null) || (U == null) || (A == null) ||
-               (T.Length < n) || (U.Length < n) || (A.Length < n) ||
-               (k <= 0)) { return -1; }
-            if (n <= 1) { if (n == 1) { U[0] = T[0]; } return n; }
+            if ((T == null) || (U == null) || (A == null) || (T.Length < n) || (U.Length < n) || (A.Length < n) || (k <= 0))
+            {
+                return -1;
+            }
+            if (n <= 1)
+            {
+                if (n == 1)
+                {
+                    U[0] = T[0];
+                }
+                return n;
+            }
             pidx = SaisMain(new IntArraySlice(T, 0), A, 0, n, k, true);
             U[0] = T[n - 1];
-            for (i = 0; i < pidx; ++i) { U[i + 1] = A[i]; }
-            for (i += 1; i < n; ++i) { U[i] = A[i]; }
+            for (i = 0; i < pidx; ++i)
+            {
+                U[i + 1] = A[i];
+            }
+            for (i += 1; i < n; ++i)
+            {
+                U[i] = A[i];
+            }
             return pidx + 1;
         }
     }

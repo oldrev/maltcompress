@@ -38,7 +38,7 @@ namespace Sandwych.Compression.Algorithms.Bwt
 
         private int EncodeBlock(byte[] buf_in, byte[] buf_out, int size)
         {
-            return SuffixArray.Bwt(buf_in, buf_out, _bucket, buf_in.Length);
+            return SuffixArrayOld.Bwt(buf_in, buf_out, _bucket, buf_in.Length);
         }
     }
 }

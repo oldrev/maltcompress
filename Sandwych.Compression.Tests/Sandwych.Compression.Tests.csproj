@@ -22,4 +22,8 @@
     <ProjectReference Include="..\src\Sandwych.Compression\Sandwych.Compression.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Algorithms\Bwt\" />
+  </ItemGroup>
+
 </Project>

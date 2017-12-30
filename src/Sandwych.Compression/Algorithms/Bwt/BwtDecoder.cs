@@ -10,8 +10,12 @@ namespace Sandwych.Compression.Algorithms.Bwt
 {
     public class BwtDecoder : AbstractCoder
     {
-        private int[] _buckets;
+        private readonly int[] _buckets = new int[0x100];
         private int[] _indices;
+
+        public BwtDecoder()
+        {
+        }
 
         public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
         {
@@ -21,22 +25,18 @@ namespace Sandwych.Compression.Algorithms.Bwt
         public void DecodeBlock(byte[] buf_encoded, byte[] buf_decoded, int size, int primary_index)
         {
             byte[] F = new byte[size];
-            int[] buckets = new int[0x100];
             int[] indices = new int[size];
 
-            for (int i = 0; i < 0x100; i++)
-            {
-                buckets[i] = 0;
-            }
+            Buffer.SetByte(_buckets, 0, 0);
 
             for (int i = 0; i < size; i++)
             {
-                buckets[buf_encoded[i]]++;
+                _buckets[buf_encoded[i]]++;
             }
 
             for (int i = 0, k = 0; i < 0x100; i++)
             {
-                for (int j = 0; j < buckets[i]; j++)
+                for (int j = 0; j < _buckets[i]; j++)
                 {
                     F[k++] = (byte)i;
                 }
@@ -48,11 +48,11 @@ namespace Sandwych.Compression.Algorithms.Bwt
                 {
                     j++;
                 }
-                buckets[i] = j;
+                _buckets[i] = j;
             }
 
             for (int i = 0; i < size; i++)
-                indices[buckets[buf_encoded[i]]++] = i;
+                indices[_buckets[buf_encoded[i]]++] = i;
 
             for (int i = 0, j = primary_index; i < size; i++)
             {
