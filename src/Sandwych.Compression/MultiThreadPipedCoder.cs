@@ -11,9 +11,20 @@ namespace Sandwych.Compression
 
     public sealed class MultiThreadPipedCoder : AbstractCoder
     {
+        private readonly struct ThreadPair
+        {
+            public Thread Thread { get; }
+            public CodingThreadInfo Info { get; }
+            public ThreadPair(Thread thread, CodingThreadInfo info)
+            {
+                this.Thread = thread;
+                this.Info = info;
+            }
+        }
+
         private readonly ICoder[] _coders;
         private readonly List<IStreamConnection> _connections;
-        private readonly List<(Thread, CodingThreadInfo)> _threads;
+        private readonly List<ThreadPair> _threads;
         private long _processedInSize;
         private long _processedOutSize;
         private ICodingProgress _externalProgress;
@@ -62,7 +73,7 @@ namespace Sandwych.Compression
 
             if (_coders.Length > 1)
             {
-                _threads = new List<(Thread, CodingThreadInfo)>(_coders.Length);
+                _threads = new List<ThreadPair>(_coders.Length);
 
                 var connectionCount = coders.Count() - 1;
                 _connections = new List<IStreamConnection>(connectionCount);
@@ -103,12 +114,13 @@ namespace Sandwych.Compression
 
                 //启动所有编码线程
                 //这里为了安全考虑，需要从反向的开始，确保所有的线程都是先停止，再由最上游的触发
-                foreach (var t in _threads.Reverse<(Thread, CodingThreadInfo)>())
+                var reversedThreads = _threads.Reverse<ThreadPair>();
+                foreach (var t in reversedThreads)
                 {
-                    t.Item1.Start(t.Item2);
+                    t.Thread.Start(t.Info);
                 }
 
-                var allFinishedEvents = _threads.Select(t => t.Item2.FinishedEvent.WaitHandle).ToArray();
+                var allFinishedEvents = _threads.Select(t => t.Info.FinishedEvent.WaitHandle).ToArray();
                 WaitHandle.WaitAll(allFinishedEvents);
             }
             else
@@ -122,9 +134,9 @@ namespace Sandwych.Compression
             _threads.Clear();
 
             //first pair
-            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.First(), inStream, _connections.First().UpStream, new ProcessedInSizeCodingProgress(this))));
+            _threads.Add(new ThreadPair(new Thread(CodeProc), new CodingThreadInfo(_coders.First(), inStream, _connections.First().UpStream, new ProcessedInSizeCodingProgress(this))));
             //last pair
-            _threads.Add((new Thread(CodeProc), new CodingThreadInfo(_coders.Last(), _connections.Last().DownStream, outStream, new ProcessedOutSizeCodingProgress(this))));
+            _threads.Add(new ThreadPair(new Thread(CodeProc), new CodingThreadInfo(_coders.Last(), _connections.Last().DownStream, outStream, new ProcessedOutSizeCodingProgress(this))));
 
             if (_connections.Count > 1)
             {
@@ -135,7 +147,8 @@ namespace Sandwych.Compression
                     var connector = _connections[connectorIndex];
                     var nextConnector = _connections[connectorIndex + 1];
 
-                    _threads.Add((new Thread(CodeProc), new CodingThreadInfo(coder, connector.DownStream, nextConnector.UpStream, null)));
+                    var pair = new ThreadPair(new Thread(CodeProc), new CodingThreadInfo(coder, connector.DownStream, nextConnector.UpStream, null));
+                    _threads.Add(pair);
                     connectorIndex++;
                 }
             }

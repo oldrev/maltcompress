@@ -18,10 +18,6 @@ namespace Sandwych.Compression.IO
         private volatile byte[] _buffer = null;
         private volatile int _bufferOffset = 0;
         private volatile int _bufferSize = 0;
-        private volatile int _downStreamDesiredSize = 0;
-        private volatile int _downStreamOffset = 0;
-        private volatile byte[] _downStreamBuffer = null;
-        private volatile bool _upStreamMoreBytes = false;
         private readonly WaitHandle[] _writeEvents;
         private readonly PipedUpStream _upStream;
         private readonly PipedDownStream _downStream;
@@ -44,10 +40,6 @@ namespace Sandwych.Compression.IO
             _buffer = null;
             _bufferOffset = 0;
             _bufferSize = 0;
-            _downStreamBuffer = null;
-            _downStreamDesiredSize = 0;
-            _downStreamOffset = 0;
-            _upStreamMoreBytes = false;
             this.ProcessedLength = 0;
         }
 
@@ -57,14 +49,19 @@ namespace Sandwych.Compression.IO
 
         public long ProcessedLength { get; private set; }
 
+        public int ReadFromDownStream(Span<byte> span)
+        {
+            return this.ReadFromDownStream(span.ToArray(), 0, span.Length);
+        }
+
         public int ReadFromDownStream(byte[] buffer, int offset, int count)
         {
-            var desiredCount = count;
+            var downStreamDesiredSize = count;
             var nRead = 0;
 
             if (count > 0)
             {
-                while (nRead < desiredCount)
+                while (nRead < downStreamDesiredSize)
                 {
                     if (_waitWrite)
                     {
@@ -72,7 +69,7 @@ namespace Sandwych.Compression.IO
                         _waitWrite = false;
                     }
 
-                    count = Math.Min(desiredCount - nRead, _bufferSize);
+                    count = Math.Min(downStreamDesiredSize - nRead, _bufferSize);
                     if (count > 0)
                     {
                         Buffer.BlockCopy(_buffer, _bufferOffset, buffer, offset, count);
@@ -137,9 +134,6 @@ namespace Sandwych.Compression.IO
         /// </summary>
         public void OnDownStreamClosed()
         {
-            _downStreamBuffer = null;
-            _downStreamDesiredSize = 0;
-            _downStreamOffset = 0;
             _downStreamClosedEvent.Set();
         }
 

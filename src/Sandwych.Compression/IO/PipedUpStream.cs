@@ -10,7 +10,7 @@ namespace Sandwych.Compression.IO
         private const int InternalBufferSize = 4096;
         private readonly DefaultStreamConnection _pipe;
         private long _position;
-        private readonly Lazy<byte[]> _buffer = new Lazy<byte[]>(() => new byte[InternalBufferSize], true);
+        //private readonly Lazy<byte[]> _buffer = new Lazy<byte[]>(() => new byte[InternalBufferSize], true);
         private int _bufferSize = 0;
         private int _bufferOffset = 0;
 
