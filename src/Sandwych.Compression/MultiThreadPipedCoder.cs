@@ -103,14 +103,14 @@ namespace Sandwych.Compression
             }
         }
 
-        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
         {
             this.Reset();
             _externalProgress = progress;
 
             if (_coders.Length > 1)
             {
-                this.CreateAllCodingThreads(inStream, outStream);
+                this.CreateAllCodingThreads(inStream, outStream, inSize, outSize);
 
                 foreach (var t in _threads)
                 {
@@ -122,18 +122,18 @@ namespace Sandwych.Compression
             }
             else
             {
-                _coders.First().Code(inStream, outStream, progress);
+                _coders.First().Code(inStream, outStream, inSize, outSize, progress);
             }
         }
 
-        private void CreateAllCodingThreads(Stream inStream, Stream outStream)
+        private void CreateAllCodingThreads(Stream inStream, Stream outStream, long inSize, long outSize)
         {
             _threads.Clear();
 
             //first pair
-            _threads.Add(new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(_coders.First(), inStream, _connections.First().Producer, new ProcessedInSizeCodingProgress(this))));
+            _threads.Add(new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(_coders.First(), inStream, _connections.First().Producer, inSize, outSize, new ProcessedInSizeCodingProgress(this))));
             //last pair
-            _threads.Add(new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(_coders.Last(), _connections.Last().Consumer, outStream, new ProcessedOutSizeCodingProgress(this))));
+            _threads.Add(new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(_coders.Last(), _connections.Last().Consumer, outStream, inSize, outSize, new ProcessedOutSizeCodingProgress(this))));
 
             if (_connections.Count > 1)
             {
@@ -144,7 +144,7 @@ namespace Sandwych.Compression
                     var connector = _connections[connectorIndex];
                     var nextConnector = _connections[connectorIndex + 1];
 
-                    var pair = new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(coder, connector.Consumer, nextConnector.Producer, null));
+                    var pair = new ThreadPair(new Thread(CodingProc), new CodingThreadInfo(coder, connector.Consumer, nextConnector.Producer, inSize, outSize, null));
                     _threads.Add(pair);
                     connectorIndex++;
                 }
@@ -154,7 +154,7 @@ namespace Sandwych.Compression
         private static void CodingProc(object args)
         {
             var info = args as CodingThreadInfo;
-            info.Coder.Code(info.InStream, info.OutStream, info.Progress);
+            info.Coder.Code(info.InStream, info.OutStream, info.InSize, info.OutSize, info.Progress);
             if (info.OutStream is ProducerStream upStream)
             {
                 upStream.Dispose();

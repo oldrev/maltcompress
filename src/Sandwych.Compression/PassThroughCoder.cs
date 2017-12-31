@@ -14,10 +14,10 @@ namespace Sandwych.Compression
             _buffer = new Lazy<byte[]>(() => new byte[bufferSize], true);
         }
 
-        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, long inSize = -1, long outSize = -1, ICodingProgress progress = null)
         {
             long processedSize = 0;
-            for (;;)
+            for (; ; )
             {
                 var nRead = inStream.Read(_buffer.Value, 0, _buffer.Value.Length);
                 if (nRead == 0)

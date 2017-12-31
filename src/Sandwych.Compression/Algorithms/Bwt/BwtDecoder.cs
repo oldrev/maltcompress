@@ -17,7 +17,7 @@ namespace Sandwych.Compression.Algorithms.Bwt
         {
         }
 
-        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
         {
             throw new NotImplementedException();
         }

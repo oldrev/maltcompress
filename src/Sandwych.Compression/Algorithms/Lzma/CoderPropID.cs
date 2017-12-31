@@ -1,36 +1,9 @@
-// ICoder.h
-
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Sandwych.Compression.Algorithms.Lzma
 {
-    /// <summary>
-    /// The exception that is thrown when an error in input stream occurs during decoding.
-    /// </summary>
-    class DataErrorException : Exception
-    {
-        public DataErrorException() : base("Data Error") { }
-    }
-
-    /// <summary>
-    /// The exception that is thrown when the value of an argument is outside the allowable range.
-    /// </summary>
-    class InvalidParamException : Exception
-    {
-        public InvalidParamException() : base("Invalid Parameter") { }
-    }
-
-    /*
-	public interface ICoder2
-	{
-		 void Code(ISequentialInStream []inStreams,
-				const UInt64 []inSizes, 
-				ISequentialOutStream []outStreams, 
-				UInt64 []outSizes,
-				ICodeProgress progress);
-	};
-  */
-
     /// <summary>
     /// Provides the fields that represent properties idenitifiers for compressing.
     /// </summary>
@@ -98,19 +71,4 @@ namespace Sandwych.Compression.Algorithms.Lzma
         EndMarker
     };
 
-
-    public interface ISetCoderProperties
-    {
-        void SetCoderProperties(CoderPropID[] propIDs, object[] properties);
-    };
-
-    public interface IWriteCoderProperties
-    {
-        void WriteCoderProperties(System.IO.Stream outStream);
-    }
-
-    public interface ISetDecoderProperties
-    {
-        void SetDecoderProperties(byte[] properties);
-    }
 }

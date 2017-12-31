@@ -1,6 +1,6 @@
 // LzmaBase.cs
 
-namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
+namespace Sandwych.Compression.Algorithms.Lzma
 {
 	internal abstract class LzmaBase
 	{

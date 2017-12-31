@@ -17,7 +17,7 @@ namespace Sandwych.Compression.Tests
             using (var outStream = new MemoryStream())
             {
                 //Yeah, let's do some multithreaded encoding:
-                pipedCoder.Code(inStream, outStream);
+                pipedCoder.Code(inStream, outStream, -1, -1);
                 Assert.Equal(inStream.Length, outStream.Length);
                 Assert.Equal(inStream.ToArray(), outStream.ToArray());
             }
@@ -35,7 +35,7 @@ namespace Sandwych.Compression.Tests
             {
 
                 //Yeah, let's do some multithreaded encoding:
-                pipedCoder.Code(inStream, outStream);
+                pipedCoder.Code(inStream, outStream, -1, -1);
                 Assert.Equal(inStream.Length, outStream.Length);
                 Assert.Equal(inStream.ToArray(), outStream.ToArray());
             }

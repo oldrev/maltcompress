@@ -1,139 +1,139 @@
 // LzmaDecoder.cs
 
+using Sandwych.Compression.Algorithms.RangeCoder;
 using System;
-using Sandwych.Compression.Algorithms.RangeCoding;
-using System.Collections.Generic;
 
-namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
+namespace Sandwych.Compression.Algorithms.Lzma
 {
-    public class LzmaDecoder : AbstractCoder, ISetDecoderProperties // ,System.IO.Stream
+    internal class LenDecoder
     {
-        class LenDecoder
+        BitDecoder m_Choice = new BitDecoder();
+        BitDecoder m_Choice2 = new BitDecoder();
+        BitTreeDecoder[] m_LowCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
+        BitTreeDecoder[] m_MidCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
+        BitTreeDecoder m_HighCoder = new BitTreeDecoder(LzmaBase.kNumHighLenBits);
+        uint m_NumPosStates = 0;
+
+        public void Create(uint numPosStates)
         {
-            BitDecoder m_Choice = new BitDecoder();
-            BitDecoder m_Choice2 = new BitDecoder();
-            BitTreeDecoder[] m_LowCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
-            BitTreeDecoder[] m_MidCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
-            BitTreeDecoder m_HighCoder = new BitTreeDecoder(LzmaBase.kNumHighLenBits);
-            uint m_NumPosStates = 0;
-
-            public void Create(uint numPosStates)
+            for (uint posState = m_NumPosStates; posState < numPosStates; posState++)
             {
-                for (uint posState = m_NumPosStates; posState < numPosStates; posState++)
-                {
-                    m_LowCoder[posState] = new BitTreeDecoder(LzmaBase.kNumLowLenBits);
-                    m_MidCoder[posState] = new BitTreeDecoder(LzmaBase.kNumMidLenBits);
-                }
-                m_NumPosStates = numPosStates;
+                m_LowCoder[posState] = new BitTreeDecoder(LzmaBase.kNumLowLenBits);
+                m_MidCoder[posState] = new BitTreeDecoder(LzmaBase.kNumMidLenBits);
             }
+            m_NumPosStates = numPosStates;
+        }
 
-            public void Init()
+        public void Init()
+        {
+            m_Choice.Init();
+            for (uint posState = 0; posState < m_NumPosStates; posState++)
             {
-                m_Choice.Init();
-                for (uint posState = 0; posState < m_NumPosStates; posState++)
-                {
-                    m_LowCoder[posState].Init();
-                    m_MidCoder[posState].Init();
-                }
-                m_Choice2.Init();
-                m_HighCoder.Init();
+                m_LowCoder[posState].Init();
+                m_MidCoder[posState].Init();
             }
+            m_Choice2.Init();
+            m_HighCoder.Init();
+        }
 
-            public uint Decode(RangeDecoder rangeDecoder, uint posState)
+        public uint Decode(RangeCoder.RangeDecoder rangeDecoder, uint posState)
+        {
+            if (m_Choice.Decode(rangeDecoder) == 0)
+                return m_LowCoder[posState].Decode(rangeDecoder);
+            else
             {
-                if (m_Choice.Decode(rangeDecoder) == 0)
-                    return m_LowCoder[posState].Decode(rangeDecoder);
+                uint symbol = LzmaBase.kNumLowLenSymbols;
+                if (m_Choice2.Decode(rangeDecoder) == 0)
+                    symbol += m_MidCoder[posState].Decode(rangeDecoder);
                 else
                 {
-                    uint symbol = LzmaBase.kNumLowLenSymbols;
-                    if (m_Choice2.Decode(rangeDecoder) == 0)
-                        symbol += m_MidCoder[posState].Decode(rangeDecoder);
-                    else
-                    {
-                        symbol += LzmaBase.kNumMidLenSymbols;
-                        symbol += m_HighCoder.Decode(rangeDecoder);
-                    }
-                    return symbol;
+                    symbol += LzmaBase.kNumMidLenSymbols;
+                    symbol += m_HighCoder.Decode(rangeDecoder);
                 }
+                return symbol;
+            }
+        }
+    }
+
+    internal class LiteralDecoder
+    {
+        struct Decoder2
+        {
+            BitDecoder[] m_Decoders;
+            public void Create() { m_Decoders = new BitDecoder[0x300]; }
+            public void Init() { for (int i = 0; i < 0x300; i++) m_Decoders[i].Init(); }
+
+            public byte DecodeNormal(RangeCoder.RangeDecoder rangeDecoder)
+            {
+                uint symbol = 1;
+                do
+                    symbol = (symbol << 1) | m_Decoders[symbol].Decode(rangeDecoder);
+                while (symbol < 0x100);
+                return (byte)symbol;
+            }
+
+            public byte DecodeWithMatchByte(RangeCoder.RangeDecoder rangeDecoder, byte matchByte)
+            {
+                uint symbol = 1;
+                do
+                {
+                    uint matchBit = (uint)(matchByte >> 7) & 1;
+                    matchByte <<= 1;
+                    uint bit = m_Decoders[((1 + matchBit) << 8) + symbol].Decode(rangeDecoder);
+                    symbol = (symbol << 1) | bit;
+                    if (matchBit != bit)
+                    {
+                        while (symbol < 0x100)
+                            symbol = (symbol << 1) | m_Decoders[symbol].Decode(rangeDecoder);
+                        break;
+                    }
+                }
+                while (symbol < 0x100);
+                return (byte)symbol;
             }
         }
 
-        class LiteralDecoder
+        Decoder2[] m_Coders;
+        int m_NumPrevBits;
+        int m_NumPosBits;
+        uint m_PosMask;
+
+        public void Create(int numPosBits, int numPrevBits)
         {
-            struct Decoder2
-            {
-                BitDecoder[] m_Decoders;
-                public void Create() { m_Decoders = new BitDecoder[0x300]; }
-                public void Init() { for (int i = 0; i < 0x300; i++) m_Decoders[i].Init(); }
+            if (m_Coders != null && m_NumPrevBits == numPrevBits &&
+                m_NumPosBits == numPosBits)
+                return;
+            m_NumPosBits = numPosBits;
+            m_PosMask = ((uint)1 << numPosBits) - 1;
+            m_NumPrevBits = numPrevBits;
+            uint numStates = (uint)1 << (m_NumPrevBits + m_NumPosBits);
+            m_Coders = new Decoder2[numStates];
+            for (uint i = 0; i < numStates; i++)
+                m_Coders[i].Create();
+        }
 
-                public byte DecodeNormal(RangeDecoder rangeDecoder)
-                {
-                    uint symbol = 1;
-                    do
-                        symbol = (symbol << 1) | m_Decoders[symbol].Decode(rangeDecoder);
-                    while (symbol < 0x100);
-                    return (byte)symbol;
-                }
+        public void Init()
+        {
+            uint numStates = (uint)1 << (m_NumPrevBits + m_NumPosBits);
+            for (uint i = 0; i < numStates; i++)
+                m_Coders[i].Init();
+        }
 
-                public byte DecodeWithMatchByte(RangeDecoder rangeDecoder, byte matchByte)
-                {
-                    uint symbol = 1;
-                    do
-                    {
-                        uint matchBit = (uint)(matchByte >> 7) & 1;
-                        matchByte <<= 1;
-                        uint bit = m_Decoders[((1 + matchBit) << 8) + symbol].Decode(rangeDecoder);
-                        symbol = (symbol << 1) | bit;
-                        if (matchBit != bit)
-                        {
-                            while (symbol < 0x100)
-                                symbol = (symbol << 1) | m_Decoders[symbol].Decode(rangeDecoder);
-                            break;
-                        }
-                    }
-                    while (symbol < 0x100);
-                    return (byte)symbol;
-                }
-            }
+        uint GetState(uint pos, byte prevByte)
+        { return ((pos & m_PosMask) << m_NumPrevBits) + (uint)(prevByte >> (8 - m_NumPrevBits)); }
 
-            Decoder2[] m_Coders;
-            int m_NumPrevBits;
-            int m_NumPosBits;
-            uint m_PosMask;
+        public byte DecodeNormal(RangeCoder.RangeDecoder rangeDecoder, uint pos, byte prevByte)
+        { return m_Coders[GetState(pos, prevByte)].DecodeNormal(rangeDecoder); }
 
-            public void Create(int numPosBits, int numPrevBits)
-            {
-                if (m_Coders != null && m_NumPrevBits == numPrevBits &&
-                    m_NumPosBits == numPosBits)
-                    return;
-                m_NumPosBits = numPosBits;
-                m_PosMask = ((uint)1 << numPosBits) - 1;
-                m_NumPrevBits = numPrevBits;
-                uint numStates = (uint)1 << (m_NumPrevBits + m_NumPosBits);
-                m_Coders = new Decoder2[numStates];
-                for (uint i = 0; i < numStates; i++)
-                    m_Coders[i].Create();
-            }
+        public byte DecodeWithMatchByte(RangeCoder.RangeDecoder rangeDecoder, uint pos, byte prevByte, byte matchByte)
+        { return m_Coders[GetState(pos, prevByte)].DecodeWithMatchByte(rangeDecoder, matchByte); }
+    }
 
-            public void Init()
-            {
-                uint numStates = (uint)1 << (m_NumPrevBits + m_NumPosBits);
-                for (uint i = 0; i < numStates; i++)
-                    m_Coders[i].Init();
-            }
 
-            uint GetState(uint pos, byte prevByte)
-            { return ((pos & m_PosMask) << m_NumPrevBits) + (uint)(prevByte >> (8 - m_NumPrevBits)); }
-
-            public byte DecodeNormal(RangeDecoder rangeDecoder, uint pos, byte prevByte)
-            { return m_Coders[GetState(pos, prevByte)].DecodeNormal(rangeDecoder); }
-
-            public byte DecodeWithMatchByte(RangeDecoder rangeDecoder, uint pos, byte prevByte, byte matchByte)
-            { return m_Coders[GetState(pos, prevByte)].DecodeWithMatchByte(rangeDecoder, matchByte); }
-        };
-
+    public class LzmaDecoder : AbstractCoder
+    {
         LZ.OutWindow m_OutWindow = new LZ.OutWindow();
-        RangeDecoder m_RangeDecoder = new RangeDecoder();
+        RangeDecoder m_RangeDecoder = new RangeCoder.RangeDecoder();
 
         BitDecoder[] m_IsMatchDecoders = new BitDecoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
         BitDecoder[] m_IsRepDecoders = new BitDecoder[LzmaBase.kNumStates];
@@ -227,8 +227,14 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
             m_PosAlignDecoder.Init();
         }
 
-        public override void Code(System.IO.Stream inStream, System.IO.Stream outStream, ICodingProgress progress = null)
+        public override void Code(System.IO.Stream inStream, System.IO.Stream outStream,
+            Int64 inSize, Int64 outSize, ICodingProgress progress)
         {
+            if (outSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(outSize), "outSize must be grater than 0. outSize is the uncompressed size of inStream.");
+            }
+
             Init(inStream, outStream);
 
             LzmaBase.State state = new LzmaBase.State();
@@ -236,7 +242,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZMA
             uint rep0 = 0, rep1 = 0, rep2 = 0, rep3 = 0;
 
             UInt64 nowPos64 = 0;
-            UInt64 outSize64 = UInt64.MaxValue;
+            UInt64 outSize64 = (UInt64)outSize;
             if (nowPos64 < outSize64)
             {
                 if (m_IsMatchDecoders[state.Index << LzmaBase.kNumPosStatesBitsMax].Decode(m_RangeDecoder) != 0)

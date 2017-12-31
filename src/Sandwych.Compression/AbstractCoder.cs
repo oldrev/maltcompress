@@ -14,6 +14,6 @@ namespace Sandwych.Compression
             this.Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public abstract void Code(Stream inStream, Stream outStream, ICodingProgress progress = null);
+        public abstract void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null);
     }
 }

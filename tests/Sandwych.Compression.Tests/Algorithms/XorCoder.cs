@@ -18,7 +18,7 @@ namespace Sandwych.Compression.Tests.Algorithms
             _key = key;
         }
 
-        public override void Code(Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public override void Code(Stream inStream, Stream outStream, long inSize = -1, long outSize = -1, ICodingProgress progress = null)
         {
             long processedSize = 0;
             for (; ; )

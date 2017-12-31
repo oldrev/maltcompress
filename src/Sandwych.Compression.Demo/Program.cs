@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using Sandwych.Compression.Algorithms.Bwt;
-using Sandwych.Compression.Algorithms.Lzma.Compression.LZMA;
+using Sandwych.Compression.Algorithms.Lzma;
 
 namespace Sandwych.Compression.Demo
 {
@@ -9,7 +9,7 @@ namespace Sandwych.Compression.Demo
     {
         static void Main(string[] args)
         {
-
+            /*
             var pipedCoder = new MultiThreadPipedCoder(new PassThroughCoder(), new PassThroughCoder(), new LzmaEncoder(), new PassThroughCoder());
             long inputSize = 0;
             long outputSize = 0;
@@ -27,6 +27,10 @@ namespace Sandwych.Compression.Demo
             Console.WriteLine("Output Size: {0}", outputSize);
             Console.WriteLine("ratio: {0}", ratio);
             Console.WriteLine("=============== All done ===============");
+            */
+            long x = -1;
+            ulong y = (ulong)x;
+            Console.WriteLine(y);
             Console.ReadKey();
         }
 

@@ -12,14 +12,14 @@ namespace Sandwych.Compression
 
         void SetOptions(IReadOnlyDictionary<string, object> options);
 
-        void Code(Stream inStream, Stream outStream, ICodingProgress progress = null);
+        void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null);
     }
 
     public static class CoderExtensions
     {
-        public static async Task CodeAsync(this ICoder self, Stream inStream, Stream outStream, ICodingProgress progress = null)
+        public static async Task CodeAsync(this ICoder self, Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
         {
-            await Task.Factory.StartNew(() => self.Code(inStream, outStream, progress))
+            await Task.Factory.StartNew(() => self.Code(inStream, outStream, inSize, outSize, progress))
                 .ConfigureAwait(false);
         }
     }

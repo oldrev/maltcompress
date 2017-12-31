@@ -1,6 +1,6 @@
 // LzOutWindow.cs
 
-namespace Sandwych.Compression.Algorithms.Lzma.Compression.LZ
+namespace Sandwych.Compression.Algorithms.Lzma.LZ
 {
 	public class OutWindow
 	{
