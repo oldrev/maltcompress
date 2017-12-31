@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Sandwych.Compression\Sandwych.Compression.csproj" />
+    <ProjectReference Include="..\..\src\Sandwych.Compression\Sandwych.Compression.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,15 +7,11 @@ namespace Sandwych.Compression
 {
     public abstract class AbstractCoder : ICoder
     {
-        public IReadOnlyDictionary<int, object> Options { get; private set; }
+        public IReadOnlyDictionary<string, object> Options { get; private set; }
 
-        public virtual void SetOptions(IReadOnlyDictionary<int, object> options)
+        public virtual void SetOptions(IReadOnlyDictionary<string, object> options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            this.Options = options;
+            this.Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public abstract void Code(Stream inStream, Stream outStream, ICodingProgress progress = null);

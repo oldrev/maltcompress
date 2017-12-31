@@ -2,16 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sandwych.Compression.IO
 {
-    internal class PipedDownStream : Stream
+    internal class ConsumerStream : AbstractPipedStream
     {
-        private readonly DefaultStreamConnection _pipe;
-
-        public PipedDownStream(DefaultStreamConnection pipe)
+        public ConsumerStream(IStreamConnector connector) : base(connector)
         {
-            _pipe = pipe;
         }
 
         public override bool CanRead => true;
@@ -31,7 +30,12 @@ namespace Sandwych.Compression.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return _pipe.ReadFromDownStream(buffer, offset, count);
+            return this.Connector.Consume(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -51,7 +55,7 @@ namespace Sandwych.Compression.IO
 
         protected override void Dispose(bool disposing)
         {
-            _pipe.OnDownStreamClosed();
+            this.Connector.ConsumerDisposed();
         }
     }
 }

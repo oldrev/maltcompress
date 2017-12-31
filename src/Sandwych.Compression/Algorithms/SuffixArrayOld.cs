@@ -379,7 +379,7 @@ namespace Sandwych.Compression.Algorithms
                     {
                         B[c1] = b;
                         c1 = c0;
-                        b = B[];
+                        b = B[c1];
                     }
                     SA[--b] = ((0 < j) && (T[j - 1] > c1)) ? ~((int)T[j - 1]) : j;
                 }

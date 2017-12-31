@@ -8,9 +8,9 @@ namespace Sandwych.Compression
 {
     public interface ICoder
     {
-        IReadOnlyDictionary<int, object> Options { get; }
+        IReadOnlyDictionary<string, object> Options { get; }
 
-        void SetOptions(IReadOnlyDictionary<int, object> options);
+        void SetOptions(IReadOnlyDictionary<string, object> options);
 
         void Code(Stream inStream, Stream outStream, ICodingProgress progress = null);
     }

@@ -2,22 +2,20 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sandwych.Compression.IO
 {
-    internal class PipedUpStream : Stream
+    internal class ProducerStream : AbstractPipedStream
     {
         private const int InternalBufferSize = 4096;
-        private readonly DefaultStreamConnection _pipe;
         private long _position;
         //private readonly Lazy<byte[]> _buffer = new Lazy<byte[]>(() => new byte[InternalBufferSize], true);
-        private int _bufferSize = 0;
-        private int _bufferOffset = 0;
 
 
-        public PipedUpStream(DefaultStreamConnection pipe)
+        public ProducerStream(IStreamConnector connector) : base(connector)
         {
-            _pipe = pipe;
         }
 
         public override bool CanRead => false;
@@ -55,13 +53,18 @@ namespace Sandwych.Compression.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            _pipe.WriteToUpStream(buffer, offset, count);
+            this.Connector.Produce(buffer, offset, count);
             _position += count;
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
         }
 
         protected override void Dispose(bool disposing)
         {
-            _pipe.OnUpStreamClosed();
+            this.Connector.ProducerDisposed();
         }
 
     }

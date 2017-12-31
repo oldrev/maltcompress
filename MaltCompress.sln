@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression", "src
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression.Demo", "src\Sandwych.Compression.Demo\Sandwych.Compression.Demo.csproj", "{B50AA66C-A015-41A7-9EC7-D0DA497FE4F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandwych.Compression.Tests", "Sandwych.Compression.Tests\Sandwych.Compression.Tests.csproj", "{924AD4A1-8BAD-45D4-8494-B5A4E5F75B2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression.Tests", "tests\Sandwych.Compression.Tests\Sandwych.Compression.Tests.csproj", "{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{B50AA66C-A015-41A7-9EC7-D0DA497FE4F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B50AA66C-A015-41A7-9EC7-D0DA497FE4F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B50AA66C-A015-41A7-9EC7-D0DA497FE4F4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{924AD4A1-8BAD-45D4-8494-B5A4E5F75B2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{924AD4A1-8BAD-45D4-8494-B5A4E5F75B2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{924AD4A1-8BAD-45D4-8494-B5A4E5F75B2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{924AD4A1-8BAD-45D4-8494-B5A4E5F75B2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
