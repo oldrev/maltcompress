@@ -6,7 +6,7 @@ namespace Sandwych.Compression
 {
     public interface IBlockCodec
     {
-        int CodeBlock(byte[] input, int inputOffset, int inputCount, byte[] output);
+        int CodeBlock(ReadOnlySpan<byte> input, Span<byte> output);
     }
 
 }

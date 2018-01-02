@@ -7,19 +7,19 @@ namespace Sandwych.Compression.Algorithms.Lzma
 {
     internal class LenDecoder
     {
-        BitDecoder m_Choice = new BitDecoder();
-        BitDecoder m_Choice2 = new BitDecoder();
-        BitTreeDecoder[] m_LowCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
-        BitTreeDecoder[] m_MidCoder = new BitTreeDecoder[LzmaBase.kNumPosStatesMax];
-        BitTreeDecoder m_HighCoder = new BitTreeDecoder(LzmaBase.kNumHighLenBits);
+        RangeBitDecoder m_Choice = new RangeBitDecoder();
+        RangeBitDecoder m_Choice2 = new RangeBitDecoder();
+        RangeBitTreeDecoder[] m_LowCoder = new RangeBitTreeDecoder[LzmaBase.kNumPosStatesMax];
+        RangeBitTreeDecoder[] m_MidCoder = new RangeBitTreeDecoder[LzmaBase.kNumPosStatesMax];
+        RangeBitTreeDecoder m_HighCoder = new RangeBitTreeDecoder(LzmaBase.kNumHighLenBits);
         uint m_NumPosStates = 0;
 
         public void Create(uint numPosStates)
         {
             for (uint posState = m_NumPosStates; posState < numPosStates; posState++)
             {
-                m_LowCoder[posState] = new BitTreeDecoder(LzmaBase.kNumLowLenBits);
-                m_MidCoder[posState] = new BitTreeDecoder(LzmaBase.kNumMidLenBits);
+                m_LowCoder[posState] = new RangeBitTreeDecoder(LzmaBase.kNumLowLenBits);
+                m_MidCoder[posState] = new RangeBitTreeDecoder(LzmaBase.kNumMidLenBits);
             }
             m_NumPosStates = numPosStates;
         }
@@ -59,8 +59,8 @@ namespace Sandwych.Compression.Algorithms.Lzma
     {
         struct Decoder2
         {
-            BitDecoder[] m_Decoders;
-            public void Create() { m_Decoders = new BitDecoder[0x300]; }
+            RangeBitDecoder[] m_Decoders;
+            public void Create() { m_Decoders = new RangeBitDecoder[0x300]; }
             public void Init() { for (int i = 0; i < 0x300; i++) m_Decoders[i].Init(); }
 
             public byte DecodeNormal(RangeCoder.RangeDecoder rangeDecoder)
@@ -135,17 +135,17 @@ namespace Sandwych.Compression.Algorithms.Lzma
         LZ.OutWindow m_OutWindow = new LZ.OutWindow();
         RangeDecoder m_RangeDecoder = new RangeCoder.RangeDecoder();
 
-        BitDecoder[] m_IsMatchDecoders = new BitDecoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
-        BitDecoder[] m_IsRepDecoders = new BitDecoder[LzmaBase.kNumStates];
-        BitDecoder[] m_IsRepG0Decoders = new BitDecoder[LzmaBase.kNumStates];
-        BitDecoder[] m_IsRepG1Decoders = new BitDecoder[LzmaBase.kNumStates];
-        BitDecoder[] m_IsRepG2Decoders = new BitDecoder[LzmaBase.kNumStates];
-        BitDecoder[] m_IsRep0LongDecoders = new BitDecoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
+        RangeBitDecoder[] m_IsMatchDecoders = new RangeBitDecoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
+        RangeBitDecoder[] m_IsRepDecoders = new RangeBitDecoder[LzmaBase.kNumStates];
+        RangeBitDecoder[] m_IsRepG0Decoders = new RangeBitDecoder[LzmaBase.kNumStates];
+        RangeBitDecoder[] m_IsRepG1Decoders = new RangeBitDecoder[LzmaBase.kNumStates];
+        RangeBitDecoder[] m_IsRepG2Decoders = new RangeBitDecoder[LzmaBase.kNumStates];
+        RangeBitDecoder[] m_IsRep0LongDecoders = new RangeBitDecoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
 
-        BitTreeDecoder[] m_PosSlotDecoder = new BitTreeDecoder[LzmaBase.kNumLenToPosStates];
-        BitDecoder[] m_PosDecoders = new BitDecoder[LzmaBase.kNumFullDistances - LzmaBase.kEndPosModelIndex];
+        RangeBitTreeDecoder[] m_PosSlotDecoder = new RangeBitTreeDecoder[LzmaBase.kNumLenToPosStates];
+        RangeBitDecoder[] m_PosDecoders = new RangeBitDecoder[LzmaBase.kNumFullDistances - LzmaBase.kEndPosModelIndex];
 
-        BitTreeDecoder m_PosAlignDecoder = new BitTreeDecoder(LzmaBase.kNumAlignBits);
+        RangeBitTreeDecoder m_PosAlignDecoder = new RangeBitTreeDecoder(LzmaBase.kNumAlignBits);
 
         LenDecoder m_LenDecoder = new LenDecoder();
         LenDecoder m_RepLenDecoder = new LenDecoder();
@@ -161,7 +161,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
         {
             m_DictionarySize = 0xFFFFFFFF;
             for (int i = 0; i < LzmaBase.kNumLenToPosStates; i++)
-                m_PosSlotDecoder[i] = new BitTreeDecoder(LzmaBase.kNumPosSlotBits);
+                m_PosSlotDecoder[i] = new RangeBitTreeDecoder(LzmaBase.kNumPosSlotBits);
         }
 
         void SetDictionarySize(uint dictionarySize)
@@ -323,7 +323,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                                 int numDirectBits = (int)((posSlot >> 1) - 1);
                                 rep0 = ((2 | (posSlot & 1)) << numDirectBits);
                                 if (posSlot < LzmaBase.kEndPosModelIndex)
-                                    rep0 += BitTreeDecoder.ReverseDecode(m_PosDecoders,
+                                    rep0 += RangeBitTreeDecoder.ReverseDecode(m_PosDecoders,
                                             rep0 - posSlot - 1, m_RangeDecoder, numDirectBits);
                                 else
                                 {

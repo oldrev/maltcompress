@@ -9,14 +9,14 @@ namespace Sandwych.Compression.Algorithms.Bwt
     {
         const int ZRLT_MAX_RUN = 0x7FFFFFFF;
 
-        public int CodeBlock(byte[] input, int inputOffset, int inputCount, byte[] output)
+        public int CodeBlock(ReadOnlySpan<byte> input, Span<byte> output)
         {
             throw new NotImplementedException();
         }
 
         private int getMaxEncodedLength(int srcLen) => srcLen;
 
-        private ArraySegment<byte> ZRLForward(byte[] src, int srcIndex, int srcCount, byte[] dest, int destIndex, int dstCount)
+        private int ZRLForward(ReadOnlySpan<byte> src, Span<byte> dest)
         {
             /*
             if ((!SliceArray < byte >::isValid(input)) || (!SliceArray < byte >::isValid(output)))
@@ -36,9 +36,11 @@ namespace Sandwych.Compression.Algorithms.Bwt
             */
 
             //int dstIdx = output.Offset;
-            int srcEnd = srcIndex + srcCount;
-            int dstEnd = dstCount;
-            int dstEnd2 = srcCount - 2;
+            int srcIndex = 0;
+            int destIndex = 0;
+            int srcEnd = srcIndex + src.Length;
+            int dstEnd = dest.Length;
+            int dstEnd2 = src.Length - 2;
             int runLength = 1;
 
             if (destIndex < dstEnd)
@@ -52,7 +54,7 @@ namespace Sandwych.Compression.Algorithms.Bwt
                         runLength++;
                         srcIndex++;
 
-                        if ((srcIndex < srcCount) && (runLength < ZRLT_MAX_RUN))
+                        if ((srcIndex < src.Length) && (runLength < ZRLT_MAX_RUN))
                         {
                             continue;
                         }
@@ -68,7 +70,7 @@ namespace Sandwych.Compression.Algorithms.Bwt
                             log2++;
                         }
 
-                        if (destIndex >= srcCount - log2)
+                        if (destIndex >= src.Length - log2)
                         {
                             break;
                         }
@@ -115,13 +117,13 @@ namespace Sandwych.Compression.Algorithms.Bwt
                 }
             }
 
-            if ((srcIndex == srcCount) && (runLength == 1))
+            if ((srcIndex == src.Length) && (runLength == 1))
             {
                 throw new InvalidOperationException();
             }
             //input.Count = srcIdx;
             //output._index = dstIdx;
-            return new ArraySegment<byte>(dest, destIndex, dest.Length - destIndex);
+            return 0;
         }
 
     }

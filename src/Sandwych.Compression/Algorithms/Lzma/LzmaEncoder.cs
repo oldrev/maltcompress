@@ -9,9 +9,9 @@ namespace Sandwych.Compression.Algorithms.Lzma
     {
         public struct Encoder2
         {
-            BitEncoder[] m_Encoders;
+            RangeBitEncoder[] m_Encoders;
 
-            public void Create() { m_Encoders = new BitEncoder[0x300]; }
+            public void Create() { m_Encoders = new RangeBitEncoder[0x300]; }
 
             public void Init() { for (int i = 0; i < 0x300; i++) m_Encoders[i].Init(); }
 
@@ -106,18 +106,18 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
     internal class LenEncoder
     {
-        BitEncoder _choice = new BitEncoder();
-        BitEncoder _choice2 = new BitEncoder();
-        BitTreeEncoder[] _lowCoder = new BitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
-        BitTreeEncoder[] _midCoder = new BitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
-        BitTreeEncoder _highCoder = new BitTreeEncoder(LzmaBase.kNumHighLenBits);
+        RangeBitEncoder _choice = new RangeBitEncoder();
+        RangeBitEncoder _choice2 = new RangeBitEncoder();
+        RangeBitTreeEncoder[] _lowCoder = new RangeBitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
+        RangeBitTreeEncoder[] _midCoder = new RangeBitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
+        RangeBitTreeEncoder _highCoder = new RangeBitTreeEncoder(LzmaBase.kNumHighLenBits);
 
         public LenEncoder()
         {
             for (UInt32 posState = 0; posState < LzmaBase.kNumPosStatesEncodingMax; posState++)
             {
-                _lowCoder[posState] = new BitTreeEncoder(LzmaBase.kNumLowLenBits);
-                _midCoder[posState] = new BitTreeEncoder(LzmaBase.kNumMidLenBits);
+                _lowCoder[posState] = new RangeBitTreeEncoder(LzmaBase.kNumLowLenBits);
+                _midCoder[posState] = new RangeBitTreeEncoder(LzmaBase.kNumMidLenBits);
             }
         }
 
@@ -305,17 +305,17 @@ namespace Sandwych.Compression.Algorithms.Lzma
         LZ.IMatchFinder _matchFinder = null;
         RangeEncoder _rangeEncoder = new RangeEncoder();
 
-        BitEncoder[] _isMatch = new BitEncoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
-        BitEncoder[] _isRep = new RangeCoder.BitEncoder[LzmaBase.kNumStates];
-        BitEncoder[] _isRepG0 = new RangeCoder.BitEncoder[LzmaBase.kNumStates];
-        BitEncoder[] _isRepG1 = new RangeCoder.BitEncoder[LzmaBase.kNumStates];
-        BitEncoder[] _isRepG2 = new RangeCoder.BitEncoder[LzmaBase.kNumStates];
-        BitEncoder[] _isRep0Long = new RangeCoder.BitEncoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
+        RangeBitEncoder[] _isMatch = new RangeBitEncoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
+        RangeBitEncoder[] _isRep = new RangeCoder.RangeBitEncoder[LzmaBase.kNumStates];
+        RangeBitEncoder[] _isRepG0 = new RangeCoder.RangeBitEncoder[LzmaBase.kNumStates];
+        RangeBitEncoder[] _isRepG1 = new RangeCoder.RangeBitEncoder[LzmaBase.kNumStates];
+        RangeBitEncoder[] _isRepG2 = new RangeCoder.RangeBitEncoder[LzmaBase.kNumStates];
+        RangeBitEncoder[] _isRep0Long = new RangeCoder.RangeBitEncoder[LzmaBase.kNumStates << LzmaBase.kNumPosStatesBitsMax];
 
-        BitTreeEncoder[] _posSlotEncoder = new RangeCoder.BitTreeEncoder[LzmaBase.kNumLenToPosStates];
+        RangeBitTreeEncoder[] _posSlotEncoder = new RangeCoder.RangeBitTreeEncoder[LzmaBase.kNumLenToPosStates];
 
-        BitEncoder[] _posEncoders = new RangeCoder.BitEncoder[LzmaBase.kNumFullDistances - LzmaBase.kEndPosModelIndex];
-        BitTreeEncoder _posAlignEncoder = new RangeCoder.BitTreeEncoder(LzmaBase.kNumAlignBits);
+        RangeBitEncoder[] _posEncoders = new RangeCoder.RangeBitEncoder[LzmaBase.kNumFullDistances - LzmaBase.kEndPosModelIndex];
+        RangeBitTreeEncoder _posAlignEncoder = new RangeCoder.RangeBitTreeEncoder(LzmaBase.kNumAlignBits);
 
         LenPriceTableEncoder _lenEncoder = new LenPriceTableEncoder();
         LenPriceTableEncoder _repMatchLenEncoder = new LenPriceTableEncoder();
@@ -385,7 +385,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
             for (int i = 0; i < kNumOpts; i++)
                 _optimum[i] = new Optimal();
             for (int i = 0; i < LzmaBase.kNumLenToPosStates; i++)
-                _posSlotEncoder[i] = new RangeCoder.BitTreeEncoder(LzmaBase.kNumPosSlotBits);
+                _posSlotEncoder[i] = new RangeCoder.RangeBitTreeEncoder(LzmaBase.kNumPosSlotBits);
         }
 
         void SetWriteEndMarkerMode(bool writeEndMarker)
@@ -1185,7 +1185,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             UInt32 posReduced = pos - baseVal;
 
                             if (posSlot < LzmaBase.kEndPosModelIndex)
-                                RangeCoder.BitTreeEncoder.ReverseEncode(_posEncoders,
+                                RangeCoder.RangeBitTreeEncoder.ReverseEncode(_posEncoders,
                                         baseVal - posSlot - 1, _rangeEncoder, footerBits, posReduced);
                             else
                             {
@@ -1318,20 +1318,20 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 UInt32 posSlot = GetPosSlot(i);
                 int footerBits = (int)((posSlot >> 1) - 1);
                 UInt32 baseVal = ((2 | (posSlot & 1)) << footerBits);
-                tempPrices[i] = BitTreeEncoder.ReverseGetPrice(_posEncoders,
+                tempPrices[i] = RangeBitTreeEncoder.ReverseGetPrice(_posEncoders,
                     baseVal - posSlot - 1, footerBits, i - baseVal);
             }
 
             for (UInt32 lenToPosState = 0; lenToPosState < LzmaBase.kNumLenToPosStates; lenToPosState++)
             {
                 UInt32 posSlot;
-                RangeCoder.BitTreeEncoder encoder = _posSlotEncoder[lenToPosState];
+                RangeCoder.RangeBitTreeEncoder encoder = _posSlotEncoder[lenToPosState];
 
                 UInt32 st = (lenToPosState << LzmaBase.kNumPosSlotBits);
                 for (posSlot = 0; posSlot < _distTableSize; posSlot++)
                     _posSlotPrices[st + posSlot] = encoder.GetPrice(posSlot);
                 for (posSlot = LzmaBase.kEndPosModelIndex; posSlot < _distTableSize; posSlot++)
-                    _posSlotPrices[st + posSlot] += ((((posSlot >> 1) - 1) - LzmaBase.kNumAlignBits) << RangeCoder.BitEncoder.kNumBitPriceShiftBits);
+                    _posSlotPrices[st + posSlot] += ((((posSlot >> 1) - 1) - LzmaBase.kNumAlignBits) << RangeCoder.RangeBitEncoder.kNumBitPriceShiftBits);
 
                 UInt32 st2 = lenToPosState * LzmaBase.kNumFullDistances;
                 UInt32 i;
