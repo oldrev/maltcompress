@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Sandwych.Compression.IO
 {
-    public interface IStreamConnector
+    public interface IStreamConnector : IDisposable
     {
         Stream Producer { get; }
         Stream Consumer { get; }

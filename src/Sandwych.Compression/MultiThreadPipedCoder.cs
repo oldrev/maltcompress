@@ -8,12 +8,13 @@ using Sandwych.Compression.IO;
 
 namespace Sandwych.Compression
 {
-   
 
-    public sealed class MultiThreadPipedCoder : AbstractCoder
+    public class MultiThreadPipedCoder<TConnector> : AbstractCoder, IDisposable
+        where TConnector : IStreamConnector, new()
     {
+        private bool _disposed = false;
         private readonly ICoder[] _coders;
-        private readonly List<IStreamConnector> _connections;
+        private readonly List<TConnector> _connections;
         private readonly List<CodingStageThread> _threads;
         private long _processedInSize;
         private long _processedOutSize;
@@ -21,9 +22,9 @@ namespace Sandwych.Compression
 
         struct ProcessedInSizeCodingProgress : ICodingProgress
         {
-            private readonly MultiThreadPipedCoder _pipedCoder;
+            private readonly MultiThreadPipedCoder<TConnector> _pipedCoder;
 
-            public ProcessedInSizeCodingProgress(MultiThreadPipedCoder pipedCoder)
+            public ProcessedInSizeCodingProgress(MultiThreadPipedCoder<TConnector> pipedCoder)
             {
                 _pipedCoder = pipedCoder;
             }
@@ -36,9 +37,9 @@ namespace Sandwych.Compression
 
         struct ProcessedOutSizeCodingProgress : ICodingProgress
         {
-            private readonly MultiThreadPipedCoder _pipedCoder;
+            private readonly MultiThreadPipedCoder<TConnector> _pipedCoder;
 
-            public ProcessedOutSizeCodingProgress(MultiThreadPipedCoder pipedCoder)
+            public ProcessedOutSizeCodingProgress(MultiThreadPipedCoder<TConnector> pipedCoder)
             {
                 _pipedCoder = pipedCoder;
             }
@@ -54,7 +55,7 @@ namespace Sandwych.Compression
         {
             if (coders == null || coders.Count() == 0)
             {
-                _coders = new ICoder[] { new PassThroughCoder() };
+                _coders = new ICoder[] { new CopyCoder() };
             }
             else
             {
@@ -66,10 +67,10 @@ namespace Sandwych.Compression
                 _threads = new List<CodingStageThread>(_coders.Length);
 
                 var connectionCount = coders.Count() - 1;
-                _connections = new List<IStreamConnector>(connectionCount);
+                _connections = new List<TConnector>(connectionCount);
                 for (int i = 0; i < connectionCount; i++)
                 {
-                    _connections.Add(new MultiThreadedStreamConnector());
+                    _connections.Add(new TConnector());
                 }
             }
             else
@@ -81,6 +82,10 @@ namespace Sandwych.Compression
 
         private void Reset()
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+            }
             _externalProgress = null;
             _processedInSize = 0;
             _processedOutSize = 0;
@@ -95,6 +100,11 @@ namespace Sandwych.Compression
 
         public override void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+            }
+
             this.Reset();
             _externalProgress = progress;
 
@@ -120,9 +130,9 @@ namespace Sandwych.Compression
         {
             _threads.Clear();
 
-            //first pair
+            //first stage
             _threads.Add(new CodingStageThread(new CodingThreadInfo(_coders.First(), inStream, _connections.First().Producer, inSize, outSize, new ProcessedInSizeCodingProgress(this))));
-            //last pair
+            //last stage
             _threads.Add(new CodingStageThread(new CodingThreadInfo(_coders.Last(), _connections.Last().Consumer, outStream, inSize, outSize, new ProcessedOutSizeCodingProgress(this))));
 
             if (_connections.Count > 1)
@@ -162,6 +172,35 @@ namespace Sandwych.Compression
             {
                 _externalProgress.Report(new CodingProgressInfo(_processedInSize, _processedOutSize));
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (!_disposed)
+                {
+                    if (_connections != null && _connections.Count > 0)
+                    {
+                        foreach (var connector in _connections)
+                        {
+                            connector.Dispose();
+                        }
+                    }
+                }
+            }
+            _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~MultiThreadPipedCoder()
+        {
+            this.Dispose(false);
         }
     }
 }

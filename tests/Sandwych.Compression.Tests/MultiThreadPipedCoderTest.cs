@@ -1,6 +1,7 @@
 using System;
 using Xunit;
 using Sandwych.Compression.Tests.Algorithms;
+using Sandwych.Compression.IO;
 using System.IO;
 
 namespace Sandwych.Compression.Tests
@@ -11,8 +12,7 @@ namespace Sandwych.Compression.Tests
         public void SingleThreadShouldBeOk()
         {
             var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
-            var pipedCoder = new MultiThreadPipedCoder(new PassThroughCoder(1024));
-
+            using (var pipedCoder = new MultiThreadPipedCoder<SynchronizedStreamConnector>(new CopyCoder(1024)))
             using (var inStream = new MemoryStream(sourceData, false))
             using (var outStream = new MemoryStream())
             {
@@ -28,8 +28,7 @@ namespace Sandwych.Compression.Tests
         {
             var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
             var xorKey = (byte)0x12;
-            var pipedCoder = new MultiThreadPipedCoder(new PassThroughCoder(), new XorCoder(xorKey), new PassThroughCoder(), new XorCoder(xorKey));
-
+            using (var pipedCoder = new MultiThreadPipedCoder<SynchronizedStreamConnector>(new CopyCoder(1024), new XorCoder(xorKey, 512), new CopyCoder(2048), new XorCoder(xorKey, 4096)))
             using (var inStream = new MemoryStream(sourceData, false))
             using (var outStream = new MemoryStream())
             {

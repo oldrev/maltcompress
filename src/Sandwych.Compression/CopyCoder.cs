@@ -5,11 +5,11 @@ using System.Text;
 
 namespace Sandwych.Compression
 {
-    public sealed class PassThroughCoder : AbstractCoder
+    public sealed class CopyCoder : AbstractCoder
     {
         private readonly Lazy<byte[]> _buffer;
 
-        public PassThroughCoder(int bufferSize = 65536)
+        public CopyCoder(int bufferSize = 65536)
         {
             _buffer = new Lazy<byte[]>(() => new byte[bufferSize], true);
         }
