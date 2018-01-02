@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Sandwych.Compression.Algorithms.Bwt;
 using Sandwych.Compression.Algorithms.Lzma;
@@ -9,14 +10,18 @@ namespace Sandwych.Compression.Demo
     {
         static void Main(string[] args)
         {
-            /*
-            var pipedCoder = new MultiThreadPipedCoder(new PassThroughCoder(), new PassThroughCoder(), new LzmaEncoder(), new PassThroughCoder());
+            var coder = new LzmaEncoder();
             long inputSize = 0;
             long outputSize = 0;
             using (var inStream = File.OpenRead(@"c:\tmp\test.tar"))
             using (var outStream = File.Create(@"c:\tmp\test.lzma"))
             {
-                pipedCoder.Code(inStream, outStream, new ConsoleProgress(inStream.Length));
+                var coderProperties = new Dictionary<CoderPropID, object>()
+                {
+                    { CoderPropID.DictionarySize, 1024 * 1024 }
+                };
+                coder.SetCoderProperties(coderProperties);
+                coder.Code(inStream, outStream, -1, -1, new ConsoleProgress(inStream.Length));
                 inputSize = inStream.Length;
                 outputSize = outStream.Length;
             }
@@ -27,7 +32,6 @@ namespace Sandwych.Compression.Demo
             Console.WriteLine("Output Size: {0}", outputSize);
             Console.WriteLine("ratio: {0}", ratio);
             Console.WriteLine("=============== All done ===============");
-            */
             long x = -1;
             ulong y = (ulong)x;
             Console.WriteLine(y);

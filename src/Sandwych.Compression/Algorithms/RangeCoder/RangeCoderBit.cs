@@ -109,7 +109,7 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
                 _prob += (kBitModelTotal - _prob) >> kNumMoveBits;
                 if (rangeDecoder.Range < RangeDecoder.kTopValue)
                 {
-                    rangeDecoder.Code = (rangeDecoder.Code << 8) | (byte)rangeDecoder._stream.ReadByte();
+                    rangeDecoder.Code = (rangeDecoder.Code << 8) | (byte)rangeDecoder._inStream.ReadByte();
                     rangeDecoder.Range <<= 8;
                 }
                 return 0;
@@ -121,7 +121,7 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
                 _prob -= (_prob) >> kNumMoveBits;
                 if (rangeDecoder.Range < RangeDecoder.kTopValue)
                 {
-                    rangeDecoder.Code = (rangeDecoder.Code << 8) | (byte)rangeDecoder._stream.ReadByte();
+                    rangeDecoder.Code = (rangeDecoder.Code << 8) | (byte)rangeDecoder._inStream.ReadByte();
                     rangeDecoder.Range <<= 8;
                 }
                 return 1;

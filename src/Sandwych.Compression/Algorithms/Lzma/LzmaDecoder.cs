@@ -36,7 +36,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
             m_HighCoder.Init();
         }
 
-        public uint Decode(RangeCoder.RangeDecoder rangeDecoder, uint posState)
+        public uint Decode(RangeDecoder rangeDecoder, uint posState)
         {
             if (m_Choice.Decode(rangeDecoder) == 0)
                 return m_LowCoder[posState].Decode(rangeDecoder);
