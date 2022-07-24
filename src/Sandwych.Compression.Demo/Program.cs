@@ -18,7 +18,7 @@ namespace Sandwych.Compression.Demo
             {
                 var coderProperties = new Dictionary<CoderPropID, object>()
                 {
-                    { CoderPropID.DictionarySize, 1024 * 1024 }
+                    { CoderPropID.DictionarySize, 1024 * 1024 },
                 };
                 coder.SetCoderProperties(coderProperties);
                 coder.Code(inStream, outStream, -1, -1, new ConsoleProgress(inStream.Length));

@@ -50,7 +50,6 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
                 if (size == 0)
                     return;
                 int numReadBytes = _stream.Read(BufferBase, (int)(BufferOffset + StreamPos), size);
-                Console.WriteLine(size);
                 if (numReadBytes == 0)
                 {
                     _posLimit = StreamPos;

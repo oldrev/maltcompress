@@ -1412,7 +1412,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _fastMode = (maximize == 0);
                             _maxMode = (maximize >= 2);
                             */
-                            break;
+                            throw new NotSupportedException();
                         }
                     case CoderPropID.MatchFinder:
                         {
