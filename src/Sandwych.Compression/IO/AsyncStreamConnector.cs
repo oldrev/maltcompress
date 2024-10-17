@@ -9,7 +9,7 @@ using DotNext.Threading;
 namespace Sandwych.Compression.IO;
 
 public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
-    private AsyncAutoResetEvent _canConsumeEvent = new AsyncAutoResetEvent(false);
+    private AsyncManualResetEvent _canConsumeEvent = new AsyncManualResetEvent(false);
 
     private SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(3);
 
@@ -64,6 +64,8 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         int count = buffer.Length;
         if (!_downStreamClosed) {
             _buffer = buffer;
+            _bufferOffset = 0;
+            _bufferSize = buffer.Length;
 
             //通知下游执行
             _canConsumeEvent.Set();
