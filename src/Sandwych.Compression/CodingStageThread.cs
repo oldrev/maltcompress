@@ -4,36 +4,35 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Sandwych.Compression
-{
-    internal class CodingStageThread
-    {
-        public Thread Thread { get; }
-        public CodingThreadInfo Info { get; }
-        public CodingStageThread(CodingThreadInfo info)
-        {
-            this.Info = info;
-            this.Thread = new Thread(this.ThreadCallbackProc);
-        }
+namespace Sandwych.Compression;
 
-        private void ThreadCallbackProc()
+internal class CodingStageThread
+{
+    public Thread Thread { get; }
+    public CodingThreadInfo Info { get; }
+    public CodingStageThread(CodingThreadInfo info)
+    {
+        this.Info = info;
+        this.Thread = new Thread(this.ThreadCallbackProc);
+    }
+
+    private void ThreadCallbackProc()
+    {
+        try
         {
-            try
+            this.Info.Coder.Code(this.Info.InStream, this.Info.OutStream, this.Info.InSize, this.Info.OutSize, this.Info.Progress);
+        }
+        finally
+        {
+            if (this.Info.OutStream is ProducerStream upStream)
             {
-                this.Info.Coder.Code(this.Info.InStream, this.Info.OutStream, this.Info.InSize, this.Info.OutSize, this.Info.Progress);
+                upStream.Dispose();
             }
-            finally
+            if (this.Info.InStream is ConsumerStream downStream)
             {
-                if (this.Info.OutStream is ProducerStream upStream)
-                {
-                    upStream.Dispose();
-                }
-                if (this.Info.InStream is ConsumerStream downStream)
-                {
-                    downStream.Dispose();
-                }
-                this.Info.FinishedEvent.Set();
+                downStream.Dispose();
             }
+            this.Info.FinishedEvent.Set();
         }
     }
 }

@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sandwych.Compression
+namespace Sandwych.Compression;
+
+public interface ICodingProgress : IProgress<CodingProgressInfo>
 {
-    public interface ICodingProgress : IProgress<CodingProgressInfo>
-    {
-    }
 }
