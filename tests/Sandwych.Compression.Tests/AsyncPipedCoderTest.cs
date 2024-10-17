@@ -8,7 +8,7 @@ using Xunit;
 namespace Sandwych.Compression.Tests;
 
 public class AsyncPipedCoderTest : AbstractCompressionTest {
-    [Fact]
+    [Fact(Timeout = 4000)]
     public async Task SingleTaskShouldBeOk() {
         var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
         await using var pipedCoder = new AsyncPipedCoder<AsyncStreamConnector>(new AsyncCopyCoder(1024));
@@ -20,7 +20,7 @@ public class AsyncPipedCoderTest : AbstractCompressionTest {
         Assert.Equal(inStream.ToArray(), outStream.ToArray());
     }
 
-    [Fact]
+    [Fact(Timeout = 10000)]
     public async Task TwoTasksShouldBeOk() {
         var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
         await using var pipedCoder = new AsyncPipedCoder<AsyncStreamConnector>(new AsyncCopyCoder(513), new AsyncCopyCoder(333));
@@ -32,7 +32,7 @@ public class AsyncPipedCoderTest : AbstractCompressionTest {
         Assert.Equal(inStream.ToArray(), outStream.ToArray());
     }
 
-    [Fact]
+    [Fact(Timeout = 10000)]
     public async Task Test4TasksCoder() {
         var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
         var xorKey = (byte)0x12;
