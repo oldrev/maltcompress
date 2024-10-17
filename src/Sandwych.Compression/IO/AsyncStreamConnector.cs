@@ -4,11 +4,12 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Threading;
 
 namespace Sandwych.Compression.IO;
 
 public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
-    private ManualResetEventSlim _canConsumeEvent = new ManualResetEventSlim(false);
+    private AsyncAutoResetEvent _canConsumeEvent = new AsyncAutoResetEvent(false);
 
     private SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(3);
 
@@ -80,7 +81,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         throw new IOException("Writing was cut");
     }
 
-    public ValueTask<int> ConsumeAsync(Memory<byte> buffer, CancellationToken cancel) {
+    public async ValueTask<int> ConsumeAsync(Memory<byte> buffer, CancellationToken cancel) {
         if (_disposed) {
             throw new ObjectDisposedException(nameof(AsyncStreamConnector));
         }
@@ -91,12 +92,12 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         var nRead = 0;
 
         if (buffer.Length <= 0) {
-            return ValueTask.FromResult(0);
+            return 0;
         }
 
         while (nRead < consumerDesiredSize) {
             if (_waitProducer) {
-                _canConsumeEvent.Wait();
+                await _canConsumeEvent.WaitAsync();
                 _waitProducer = false;
             }
 
@@ -122,7 +123,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
                 throw new InvalidOperationException();
             }
         }
-        return ValueTask.FromResult(count);
+        return count;
     }
 
     protected virtual void Dispose(bool disposing) {
@@ -137,13 +138,10 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         _disposed = true;
     }
 
-    public void Dispose() {
-        this.Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     ~AsyncStreamConnector() {
-        this.Dispose(false);
+        if (!_disposed) {
+            throw new InvalidOperationException("Not disposed!");
+        }
     }
 
     void CloseRead_CallOnce() {
@@ -179,7 +177,9 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
     }
 
     public ValueTask DisposeAsync() {
-        throw new NotImplementedException();
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
     }
 
 }

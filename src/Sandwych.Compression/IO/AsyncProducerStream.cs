@@ -54,7 +54,7 @@ internal class AsyncProducerStream : AbstractAsyncPipedStream {
         throw new NotSupportedException();
 
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) {
-        await Connector.ProduceAsync(buffer, cancellationToken);
+        await this.Connector.ProduceAsync(buffer, cancellationToken);
         _position += buffer.Length;
     }
 

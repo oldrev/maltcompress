@@ -1,33 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-  </PropertyGroup>
+    <ItemGroup>
+        <Folder Include="Archives\Rar\" />
+        <Folder Include="Archives\Tar\" />
+        <Folder Include="Archives\Zip\" />
+        <Folder Include="Archives\SevenZip\" />
+    </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-		<PackageReference Include="System.Buffers" Version="4.5.1" />
-		<PackageReference Include="System.Memory" Version="4.5.5" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.1'">
-		<PackageReference Include="System.Buffers" Version="4.5.1" />
-		<PackageReference Include="System.Memory" Version="4.5.5" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)'=='net48'">
-		<PackageReference Include="System.Buffers" Version="4.5.1" />
-		<PackageReference Include="System.Memory" Version="4.5.5" />
-	</ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Archives\Rar\" />
-    <Folder Include="Archives\Tar\" />
-    <Folder Include="Archives\Zip\" />
-    <Folder Include="Archives\SevenZip\" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="DotNext.Threading">
+            <Version>5.15.0</Version>
+        </PackageReference>
+    </ItemGroup>
 
 </Project>
