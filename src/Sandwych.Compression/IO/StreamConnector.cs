@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Sandwych.Compression.IO;
 
-public class SynchronizedStreamConnector2 : IStreamConnector
+public class StreamConnector : IStreamConnector
 {
 	private ManualResetEventSlim _canConsumeEvent = new ManualResetEventSlim(false);
 
@@ -23,7 +23,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 	private readonly ProducerStream _producerStream;
 	private readonly ConsumerStream _consumerStream;
 
-	public SynchronizedStreamConnector2()
+	public StreamConnector()
 	{
 		_producerStream = new ProducerStream(this);
 		_consumerStream = new ConsumerStream(this);
@@ -35,7 +35,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 	{
 		if (_disposed)
 		{
-			throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+			throw new ObjectDisposedException(nameof(StreamConnector));
 		}
 
 		_canConsumeEvent.Reset();
@@ -59,7 +59,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 	{
 		if (_disposed)
 		{
-			throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+			throw new ObjectDisposedException(nameof(StreamConnector));
 		}
 		this.ProduceInternal(buffer, offset, count);
 	}
@@ -98,7 +98,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 	{
 		if (_disposed)
 		{
-			throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+			throw new ObjectDisposedException(nameof(StreamConnector));
 		}
 
 		return this.ConsumeInternal(buffer, offset, count);
@@ -165,7 +165,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 	{
 		if (_disposed)
 		{
-			throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+			throw new ObjectDisposedException(nameof(StreamConnector));
 		}
 
 		_buffer = null;
@@ -194,7 +194,7 @@ public class SynchronizedStreamConnector2 : IStreamConnector
 		GC.SuppressFinalize(this);
 	}
 
-	~SynchronizedStreamConnector2()
+	~StreamConnector()
 	{
 		this.Dispose(false);
 	}

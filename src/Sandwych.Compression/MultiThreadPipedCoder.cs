@@ -51,11 +51,11 @@ public class MultiThreadPipedCoder<TConnector> : AbstractCoder, IDisposable
         }
     }
 
-    public MultiThreadPipedCoder(params ICoder[] coders)
+	public MultiThreadPipedCoder(params ICoder[] coders)
     {
         if (coders == null || coders.Count() == 0)
         {
-            _coders = new ICoder[] { new CopyCoder() };
+            _coders = [new CopyCoder()];
         }
         else
         {
@@ -84,7 +84,7 @@ public class MultiThreadPipedCoder<TConnector> : AbstractCoder, IDisposable
     {
         if (_disposed)
         {
-            throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+            throw new ObjectDisposedException(nameof(MultiThreadPipedCoder<TConnector>));
         }
         _externalProgress = null;
         _processedInSize = 0;
@@ -102,7 +102,7 @@ public class MultiThreadPipedCoder<TConnector> : AbstractCoder, IDisposable
     {
         if (_disposed)
         {
-            throw new ObjectDisposedException(nameof(SynchronizedStreamConnector));
+            throw new ObjectDisposedException(nameof(MultiThreadPipedCoder<TConnector>));
         }
 
         this.Reset();
