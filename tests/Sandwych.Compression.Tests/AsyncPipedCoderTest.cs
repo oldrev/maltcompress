@@ -21,6 +21,18 @@ public class AsyncPipedCoderTest : AbstractCompressionTest {
     }
 
     [Fact]
+    public async Task TwoTasksShouldBeOk() {
+        var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
+        await using var pipedCoder = new AsyncPipedCoder<AsyncStreamConnector>(new AsyncCopyCoder(513), new AsyncCopyCoder(333));
+        using var inStream = new MemoryStream(sourceData, false);
+        using var outStream = new MemoryStream();
+        //Yeah, let's do some multithreaded encoding:
+        await pipedCoder.CodeAsync(inStream, outStream, -1, -1);
+        Assert.Equal(inStream.Length, outStream.Length);
+        Assert.Equal(inStream.ToArray(), outStream.ToArray());
+    }
+
+    [Fact]
     public async Task Test4TasksCoder() {
         var sourceData = this.CreateRandomBytes(1024 * 1024 * 4);
         var xorKey = (byte)0x12;

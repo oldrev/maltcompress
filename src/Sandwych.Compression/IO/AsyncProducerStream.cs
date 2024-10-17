@@ -62,8 +62,8 @@ internal class AsyncProducerStream : AbstractAsyncPipedStream {
         throw new NotSupportedException();
 
 
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+         await this.Connector.ProduceAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
 
     public override void Write(ReadOnlySpan<byte> buffer) =>
         throw new NotSupportedException();

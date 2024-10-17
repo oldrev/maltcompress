@@ -82,7 +82,8 @@ public class AsyncPipedCoder<TConnector> : AbstractAsyncCoder, IAsyncDisposable
         }
     }
 
-    public override async ValueTask CodeAsync(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null) {
+    public override async ValueTask CodeAsync(Stream inStream, Stream outStream,
+        long inSize = -1, long outSize = -1, ICodingProgress progress = null) {
         if (_disposed) {
             throw new ObjectDisposedException(nameof(AsyncPipedCoder<TConnector>));
         }
