@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sandwych.Compression.Algorithms.Lzma
-{
+namespace Sandwych.Compression.Algorithms.Lzma {
     /// <summary>
     /// Provides the fields that represent properties idenitifiers for compressing.
     /// </summary>
-    public enum CoderPropID
-    {
+    public enum CoderPropID {
         /// <summary>
         /// Specifies default property.
         /// </summary>

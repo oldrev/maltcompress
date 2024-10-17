@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression", "src\Sandwych.Compression\Sandwych.Compression.csproj", "{C574AB3D-A44B-4E5E-BD37-DE1C24C11E6C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression.Demo", "src\Sandwych.Compression.Demo\Sandwych.Compression.Demo.csproj", "{B50AA66C-A015-41A7-9EC7-D0DA497FE4F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandwych.Compression.Tests", "tests\Sandwych.Compression.Tests\Sandwych.Compression.Tests.csproj", "{B6756401-5E48-4DB5-9C6F-35B80FD4E31F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决方案项", "{040988B4-3BB4-46B3-9F74-122CF13A29D8}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

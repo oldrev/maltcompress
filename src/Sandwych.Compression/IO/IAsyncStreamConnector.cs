@@ -1,20 +1,19 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
-using System.Threading.Tasks;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sandwych.Compression.IO;
 
-public interface IAsyncStreamConnector : IAsyncDisposable
-{
+public interface IAsyncStreamConnector : IAsyncDisposable {
     Stream Producer { get; }
     Stream Consumer { get; }
     void Reset();
-    ValueTask Produce(ReadOnlyMemory<byte> buffer, CancellationToken cancel);
-    ValueTask<int> Consume(Memory<byte> buffer, CancellationToken cancel);
+    ValueTask ProduceAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancel);
+    ValueTask<int> ConsumeAsync(Memory<byte> buffer, CancellationToken cancel);
 
-    ValueTask ProducerDisposed();
-    ValueTask ConsumerDisposed();
+    ValueTask ProducerDisposedAsync();
+    ValueTask ConsumerDisposedAsync();
 }

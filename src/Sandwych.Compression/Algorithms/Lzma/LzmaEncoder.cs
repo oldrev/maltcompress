@@ -1,44 +1,36 @@
 // LzmaEncoder.cs
 
-using Sandwych.Compression.Algorithms.Lzma.LZ;
-using Sandwych.Compression.Algorithms.RangeCoder;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Sandwych.Compression.Algorithms.Lzma.LZ;
+using Sandwych.Compression.Algorithms.RangeCoder;
 
-namespace Sandwych.Compression.Algorithms.Lzma
-{
-    internal class LiteralEncoder
-    {
-        public struct Encoder2
-        {
+namespace Sandwych.Compression.Algorithms.Lzma {
+    internal class LiteralEncoder {
+        public struct Encoder2 {
             RangeBitEncoder[] m_Encoders;
 
             public void Create() { m_Encoders = new RangeBitEncoder[0x300]; }
 
             public void Init() { for (int i = 0; i < 0x300; i++) m_Encoders[i].Init(); }
 
-            public void Encode(RangeEncoder rangeEncoder, byte symbol)
-            {
+            public void Encode(RangeEncoder rangeEncoder, byte symbol) {
                 uint context = 1;
-                for (int i = 7; i >= 0; i--)
-                {
+                for (int i = 7; i >= 0; i--) {
                     uint bit = (uint)((symbol >> i) & 1);
                     m_Encoders[context].Encode(rangeEncoder, bit);
                     context = (context << 1) | bit;
                 }
             }
 
-            public void EncodeMatched(RangeEncoder rangeEncoder, byte matchByte, byte symbol)
-            {
+            public void EncodeMatched(RangeEncoder rangeEncoder, byte matchByte, byte symbol) {
                 uint context = 1;
                 bool same = true;
-                for (int i = 7; i >= 0; i--)
-                {
+                for (int i = 7; i >= 0; i--) {
                     uint bit = (uint)((symbol >> i) & 1);
                     uint state = context;
-                    if (same)
-                    {
+                    if (same) {
                         uint matchBit = (uint)((matchByte >> i) & 1);
                         state += ((1 + matchBit) << 8);
                         same = (matchBit == bit);
@@ -48,28 +40,23 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 }
             }
 
-            public uint GetPrice(bool matchMode, byte matchByte, byte symbol)
-            {
+            public uint GetPrice(bool matchMode, byte matchByte, byte symbol) {
                 uint price = 0;
                 uint context = 1;
                 int i = 7;
-                if (matchMode)
-                {
-                    for (; i >= 0; i--)
-                    {
+                if (matchMode) {
+                    for (; i >= 0; i--) {
                         uint matchBit = (uint)(matchByte >> i) & 1;
                         uint bit = (uint)(symbol >> i) & 1;
                         price += m_Encoders[((1 + matchBit) << 8) + context].GetPrice(bit);
                         context = (context << 1) | bit;
-                        if (matchBit != bit)
-                        {
+                        if (matchBit != bit) {
                             i--;
                             break;
                         }
                     }
                 }
-                for (; i >= 0; i--)
-                {
+                for (; i >= 0; i--) {
                     uint bit = (uint)(symbol >> i) & 1;
                     price += m_Encoders[context].GetPrice(bit);
                     context = (context << 1) | bit;
@@ -83,8 +70,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
         int m_NumPosBits;
         uint m_PosMask;
 
-        public void Create(int numPosBits, int numPrevBits)
-        {
+        public void Create(int numPosBits, int numPrevBits) {
             if (m_Coders != null && m_NumPrevBits == numPrevBits && m_NumPosBits == numPosBits)
                 return;
             m_NumPosBits = numPosBits;
@@ -96,85 +82,70 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 m_Coders[i].Create();
         }
 
-        public void Init()
-        {
+        public void Init() {
             uint numStates = (uint)1 << (m_NumPrevBits + m_NumPosBits);
             for (uint i = 0; i < numStates; i++)
                 m_Coders[i].Init();
         }
 
-        public Encoder2 GetSubCoder(UInt32 pos, Byte prevByte)
-        { return m_Coders[((pos & m_PosMask) << m_NumPrevBits) + (uint)(prevByte >> (8 - m_NumPrevBits))]; }
+        public Encoder2 GetSubCoder(UInt32 pos, Byte prevByte) { return m_Coders[((pos & m_PosMask) << m_NumPrevBits) + (uint)(prevByte >> (8 - m_NumPrevBits))]; }
     }
 
-    internal class LenEncoder
-    {
+    internal class LenEncoder {
         RangeBitEncoder _choice = new RangeBitEncoder();
         RangeBitEncoder _choice2 = new RangeBitEncoder();
         RangeBitTreeEncoder[] _lowCoder = new RangeBitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
         RangeBitTreeEncoder[] _midCoder = new RangeBitTreeEncoder[LzmaBase.kNumPosStatesEncodingMax];
         RangeBitTreeEncoder _highCoder = new RangeBitTreeEncoder(LzmaBase.kNumHighLenBits);
 
-        public LenEncoder()
-        {
-            for (UInt32 posState = 0; posState < LzmaBase.kNumPosStatesEncodingMax; posState++)
-            {
+        public LenEncoder() {
+            for (UInt32 posState = 0; posState < LzmaBase.kNumPosStatesEncodingMax; posState++) {
                 _lowCoder[posState] = new RangeBitTreeEncoder(LzmaBase.kNumLowLenBits);
                 _midCoder[posState] = new RangeBitTreeEncoder(LzmaBase.kNumMidLenBits);
             }
         }
 
-        public void Init(UInt32 numPosStates)
-        {
+        public void Init(UInt32 numPosStates) {
             _choice.Init();
             _choice2.Init();
-            for (UInt32 posState = 0; posState < numPosStates; posState++)
-            {
+            for (UInt32 posState = 0; posState < numPosStates; posState++) {
                 _lowCoder[posState].Init();
                 _midCoder[posState].Init();
             }
             _highCoder.Init();
         }
 
-        public void Encode(RangeEncoder rangeEncoder, UInt32 symbol, UInt32 posState)
-        {
-            if (symbol < LzmaBase.kNumLowLenSymbols)
-            {
+        public void Encode(RangeEncoder rangeEncoder, UInt32 symbol, UInt32 posState) {
+            if (symbol < LzmaBase.kNumLowLenSymbols) {
                 _choice.Encode(rangeEncoder, 0);
                 _lowCoder[posState].Encode(rangeEncoder, symbol);
             }
-            else
-            {
+            else {
                 symbol -= LzmaBase.kNumLowLenSymbols;
                 _choice.Encode(rangeEncoder, 1);
-                if (symbol < LzmaBase.kNumMidLenSymbols)
-                {
+                if (symbol < LzmaBase.kNumMidLenSymbols) {
                     _choice2.Encode(rangeEncoder, 0);
                     _midCoder[posState].Encode(rangeEncoder, symbol);
                 }
-                else
-                {
+                else {
                     _choice2.Encode(rangeEncoder, 1);
                     _highCoder.Encode(rangeEncoder, symbol - LzmaBase.kNumMidLenSymbols);
                 }
             }
         }
 
-        public void SetPrices(UInt32 posState, UInt32 numSymbols, UInt32[] prices, UInt32 st)
-        {
+        public void SetPrices(UInt32 posState, UInt32 numSymbols, UInt32[] prices, UInt32 st) {
             UInt32 a0 = _choice.GetPrice0();
             UInt32 a1 = _choice.GetPrice1();
             UInt32 b0 = a1 + _choice2.GetPrice0();
             UInt32 b1 = a1 + _choice2.GetPrice1();
             UInt32 i = 0;
-            for (i = 0; i < LzmaBase.kNumLowLenSymbols; i++)
-            {
+            for (i = 0; i < LzmaBase.kNumLowLenSymbols; i++) {
                 if (i >= numSymbols)
                     return;
                 prices[st + i] = a0 + _lowCoder[posState].GetPrice(i);
             }
-            for (; i < LzmaBase.kNumLowLenSymbols + LzmaBase.kNumMidLenSymbols; i++)
-            {
+            for (; i < LzmaBase.kNumLowLenSymbols + LzmaBase.kNumMidLenSymbols; i++) {
                 if (i >= numSymbols)
                     return;
                 prices[st + i] = b0 + _midCoder[posState].GetPrice(i - LzmaBase.kNumLowLenSymbols);
@@ -185,41 +156,35 @@ namespace Sandwych.Compression.Algorithms.Lzma
     }
 
 
-    internal class LenPriceTableEncoder : LenEncoder
-    {
+    internal class LenPriceTableEncoder : LenEncoder {
         UInt32[] _prices = new UInt32[LzmaBase.kNumLenSymbols << LzmaBase.kNumPosStatesBitsEncodingMax];
         UInt32 _tableSize;
         UInt32[] _counters = new UInt32[LzmaBase.kNumPosStatesEncodingMax];
 
         public void SetTableSize(UInt32 tableSize) { _tableSize = tableSize; }
 
-        public UInt32 GetPrice(UInt32 symbol, UInt32 posState)
-        {
+        public UInt32 GetPrice(UInt32 symbol, UInt32 posState) {
             return _prices[posState * LzmaBase.kNumLenSymbols + symbol];
         }
 
-        void UpdateTable(UInt32 posState)
-        {
+        void UpdateTable(UInt32 posState) {
             SetPrices(posState, _tableSize, _prices, posState * LzmaBase.kNumLenSymbols);
             _counters[posState] = _tableSize;
         }
 
-        public void UpdateTables(UInt32 numPosStates)
-        {
+        public void UpdateTables(UInt32 numPosStates) {
             for (UInt32 posState = 0; posState < numPosStates; posState++)
                 UpdateTable(posState);
         }
 
-        public new void Encode(RangeCoder.RangeEncoder rangeEncoder, UInt32 symbol, UInt32 posState)
-        {
+        public new void Encode(RangeCoder.RangeEncoder rangeEncoder, UInt32 symbol, UInt32 posState) {
             base.Encode(rangeEncoder, symbol, posState);
             if (--_counters[posState] == 0)
                 UpdateTable(posState);
         }
     }
 
-    internal class Optimal
-    {
+    internal class Optimal {
         public LzmaBase.State State;
 
         public bool Prev1IsChar;
@@ -242,10 +207,8 @@ namespace Sandwych.Compression.Algorithms.Lzma
         public bool IsShortRep() { return (BackPrev == 0); }
     }
 
-    public class LzmaEncoder : AbstractCoder
-    {
-        enum EMatchFinderType
-        {
+    public class LzmaEncoder : AbstractCoder {
+        enum EMatchFinderType {
             BT2,
             BT4,
         };
@@ -254,22 +217,19 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
         static Byte[] g_FastPos = new Byte[1 << 11];
 
-        static LzmaEncoder()
-        {
+        static LzmaEncoder() {
             const Byte kFastSlots = 22;
             int c = 2;
             g_FastPos[0] = 0;
             g_FastPos[1] = 1;
-            for (Byte slotFast = 2; slotFast < kFastSlots; slotFast++)
-            {
+            for (Byte slotFast = 2; slotFast < kFastSlots; slotFast++) {
                 UInt32 k = ((UInt32)1 << ((slotFast >> 1) - 1));
                 for (UInt32 j = 0; j < k; j++, c++)
                     g_FastPos[c] = slotFast;
             }
         }
 
-        static UInt32 GetPosSlot(UInt32 pos)
-        {
+        static UInt32 GetPosSlot(UInt32 pos) {
             if (pos < (1 << 11))
                 return g_FastPos[pos];
             if (pos < (1 << 21))
@@ -277,8 +237,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
             return (UInt32)(g_FastPos[pos >> 20] + 40);
         }
 
-        static UInt32 GetPosSlot2(UInt32 pos)
-        {
+        static UInt32 GetPosSlot2(UInt32 pos) {
             if (pos < (1 << 17))
                 return (UInt32)(g_FastPos[pos >> 6] + 12);
             if (pos < (1 << 27))
@@ -290,8 +249,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
         Byte _previousByte;
         UInt32[] _repDistances = new UInt32[LzmaBase.kNumRepDistances];
 
-        void BaseInit()
-        {
+        void BaseInit() {
             _state.Init();
             _previousByte = 0;
             for (UInt32 i = 0; i < LzmaBase.kNumRepDistances; i++)
@@ -363,10 +321,8 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
         bool _needReleaseMFStream;
 
-        void Create()
-        {
-            if (_matchFinder == null)
-            {
+        void Create() {
+            if (_matchFinder == null) {
                 BinTree bt = new BinTree();
                 int numHashBytes = 4;
                 if (_matchFinderType == EMatchFinderType.BT2)
@@ -383,29 +339,24 @@ namespace Sandwych.Compression.Algorithms.Lzma
             _numFastBytesPrev = _numFastBytes;
         }
 
-        public LzmaEncoder()
-        {
+        public LzmaEncoder() {
             for (int i = 0; i < kNumOpts; i++)
                 _optimum[i] = new Optimal();
             for (int i = 0; i < LzmaBase.kNumLenToPosStates; i++)
                 _posSlotEncoder[i] = new RangeCoder.RangeBitTreeEncoder(LzmaBase.kNumPosSlotBits);
         }
 
-        void SetWriteEndMarkerMode(bool writeEndMarker)
-        {
+        void SetWriteEndMarkerMode(bool writeEndMarker) {
             _writeEndMark = writeEndMarker;
         }
 
-        void Init()
-        {
+        void Init() {
             BaseInit();
             _rangeEncoder.Init();
 
             uint i;
-            for (i = 0; i < LzmaBase.kNumStates; i++)
-            {
-                for (uint j = 0; j <= _posStateMask; j++)
-                {
+            for (i = 0; i < LzmaBase.kNumStates; i++) {
+                for (uint j = 0; j <= _posStateMask; j++) {
                     uint complexState = (i << LzmaBase.kNumPosStatesBitsMax) + j;
                     _isMatch[complexState].Init();
                     _isRep0Long[complexState].Init();
@@ -432,12 +383,10 @@ namespace Sandwych.Compression.Algorithms.Lzma
             _additionalOffset = 0;
         }
 
-        void ReadMatchDistances(out UInt32 lenRes, out UInt32 numDistancePairs)
-        {
+        void ReadMatchDistances(out UInt32 lenRes, out UInt32 numDistancePairs) {
             lenRes = 0;
             numDistancePairs = _matchFinder.GetMatches(_matchDistances);
-            if (numDistancePairs > 0)
-            {
+            if (numDistancePairs > 0) {
                 lenRes = _matchDistances[numDistancePairs - 2];
                 if (lenRes == _numFastBytes)
                     lenRes += _matchFinder.GetMatchLen((int)lenRes - 1, _matchDistances[numDistancePairs - 1],
@@ -447,36 +396,29 @@ namespace Sandwych.Compression.Algorithms.Lzma
         }
 
 
-        void MovePos(UInt32 num)
-        {
-            if (num > 0)
-            {
+        void MovePos(UInt32 num) {
+            if (num > 0) {
                 _matchFinder.Skip(num);
                 _additionalOffset += num;
             }
         }
 
-        UInt32 GetRepLen1Price(LzmaBase.State state, UInt32 posState)
-        {
+        UInt32 GetRepLen1Price(LzmaBase.State state, UInt32 posState) {
             return _isRepG0[state.Index].GetPrice0() +
                     _isRep0Long[(state.Index << LzmaBase.kNumPosStatesBitsMax) + posState].GetPrice0();
         }
 
-        UInt32 GetPureRepPrice(UInt32 repIndex, LzmaBase.State state, UInt32 posState)
-        {
+        UInt32 GetPureRepPrice(UInt32 repIndex, LzmaBase.State state, UInt32 posState) {
             UInt32 price;
-            if (repIndex == 0)
-            {
+            if (repIndex == 0) {
                 price = _isRepG0[state.Index].GetPrice0();
                 price += _isRep0Long[(state.Index << LzmaBase.kNumPosStatesBitsMax) + posState].GetPrice1();
             }
-            else
-            {
+            else {
                 price = _isRepG0[state.Index].GetPrice1();
                 if (repIndex == 1)
                     price += _isRepG1[state.Index].GetPrice0();
-                else
-                {
+                else {
                     price += _isRepG1[state.Index].GetPrice1();
                     price += _isRepG2[state.Index].GetPrice(repIndex - 2);
                 }
@@ -484,14 +426,12 @@ namespace Sandwych.Compression.Algorithms.Lzma
             return price;
         }
 
-        UInt32 GetRepPrice(UInt32 repIndex, UInt32 len, LzmaBase.State state, UInt32 posState)
-        {
+        UInt32 GetRepPrice(UInt32 repIndex, UInt32 len, LzmaBase.State state, UInt32 posState) {
             UInt32 price = _repMatchLenEncoder.GetPrice(len - LzmaBase.kMatchMinLen, posState);
             return price + GetPureRepPrice(repIndex, state, posState);
         }
 
-        UInt32 GetPosLenPrice(UInt32 pos, UInt32 len, UInt32 posState)
-        {
+        UInt32 GetPosLenPrice(UInt32 pos, UInt32 len, UInt32 posState) {
             UInt32 price;
             UInt32 lenToPosState = LzmaBase.GetLenToPosState(len);
             if (pos < LzmaBase.kNumFullDistances)
@@ -502,19 +442,15 @@ namespace Sandwych.Compression.Algorithms.Lzma
             return price + _lenEncoder.GetPrice(len - LzmaBase.kMatchMinLen, posState);
         }
 
-        UInt32 Backward(out UInt32 backRes, UInt32 cur)
-        {
+        UInt32 Backward(out UInt32 backRes, UInt32 cur) {
             _optimumEndIndex = cur;
             UInt32 posMem = _optimum[cur].PosPrev;
             UInt32 backMem = _optimum[cur].BackPrev;
-            do
-            {
-                if (_optimum[cur].Prev1IsChar)
-                {
+            do {
+                if (_optimum[cur].Prev1IsChar) {
                     _optimum[posMem].MakeAsChar();
                     _optimum[posMem].PosPrev = posMem - 1;
-                    if (_optimum[cur].Prev2)
-                    {
+                    if (_optimum[cur].Prev2) {
                         _optimum[posMem - 1].Prev1IsChar = false;
                         _optimum[posMem - 1].PosPrev = _optimum[cur].PosPrev2;
                         _optimum[posMem - 1].BackPrev = _optimum[cur].BackPrev2;
@@ -540,10 +476,8 @@ namespace Sandwych.Compression.Algorithms.Lzma
         UInt32[] repLens = new UInt32[LzmaBase.kNumRepDistances];
 
 
-        UInt32 GetOptimum(UInt32 position, out UInt32 backRes)
-        {
-            if (_optimumEndIndex != _optimumCurrentIndex)
-            {
+        UInt32 GetOptimum(UInt32 position, out UInt32 backRes) {
+            if (_optimumEndIndex != _optimumCurrentIndex) {
                 UInt32 lenRes = _optimum[_optimumCurrentIndex].PosPrev - _optimumCurrentIndex;
                 backRes = _optimum[_optimumCurrentIndex].BackPrev;
                 _optimumCurrentIndex = _optimum[_optimumCurrentIndex].PosPrev;
@@ -552,20 +486,17 @@ namespace Sandwych.Compression.Algorithms.Lzma
             _optimumCurrentIndex = _optimumEndIndex = 0;
 
             UInt32 lenMain, numDistancePairs;
-            if (!_longestMatchWasFound)
-            {
+            if (!_longestMatchWasFound) {
                 ReadMatchDistances(out lenMain, out numDistancePairs);
             }
-            else
-            {
+            else {
                 lenMain = _longestMatchLength;
                 numDistancePairs = _numDistancePairs;
                 _longestMatchWasFound = false;
             }
 
             UInt32 numAvailableBytes = _matchFinder.GetNumAvailableBytes() + 1;
-            if (numAvailableBytes < 2)
-            {
+            if (numAvailableBytes < 2) {
                 backRes = 0xFFFFFFFF;
                 return 1;
             }
@@ -574,23 +505,20 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
             UInt32 repMaxIndex = 0;
             UInt32 i;
-            for (i = 0; i < LzmaBase.kNumRepDistances; i++)
-            {
+            for (i = 0; i < LzmaBase.kNumRepDistances; i++) {
                 reps[i] = _repDistances[i];
                 repLens[i] = _matchFinder.GetMatchLen(0 - 1, reps[i], LzmaBase.kMatchMaxLen);
                 if (repLens[i] > repLens[repMaxIndex])
                     repMaxIndex = i;
             }
-            if (repLens[repMaxIndex] >= _numFastBytes)
-            {
+            if (repLens[repMaxIndex] >= _numFastBytes) {
                 backRes = repMaxIndex;
                 UInt32 lenRes = repLens[repMaxIndex];
                 MovePos(lenRes - 1);
                 return lenRes;
             }
 
-            if (lenMain >= _numFastBytes)
-            {
+            if (lenMain >= _numFastBytes) {
                 backRes = _matchDistances[numDistancePairs - 1] + LzmaBase.kNumRepDistances;
                 MovePos(lenMain - 1);
                 return lenMain;
@@ -599,8 +527,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
             Byte currentByte = _matchFinder.GetIndexByte(0 - 1);
             Byte matchByte = _matchFinder.GetIndexByte((Int32)(0 - _repDistances[0] - 1 - 1));
 
-            if (lenMain < 2 && currentByte != matchByte && repLens[repMaxIndex] < 2)
-            {
+            if (lenMain < 2 && currentByte != matchByte && repLens[repMaxIndex] < 2) {
                 backRes = (UInt32)0xFFFFFFFF;
                 return 1;
             }
@@ -616,11 +543,9 @@ namespace Sandwych.Compression.Algorithms.Lzma
             UInt32 matchPrice = _isMatch[(_state.Index << LzmaBase.kNumPosStatesBitsMax) + posState].GetPrice1();
             UInt32 repMatchPrice = matchPrice + _isRep[_state.Index].GetPrice1();
 
-            if (matchByte == currentByte)
-            {
+            if (matchByte == currentByte) {
                 UInt32 shortRepPrice = repMatchPrice + GetRepLen1Price(_state, posState);
-                if (shortRepPrice < _optimum[1].Price)
-                {
+                if (shortRepPrice < _optimum[1].Price) {
                     _optimum[1].Price = shortRepPrice;
                     _optimum[1].MakeAsShortRep();
                 }
@@ -628,8 +553,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
             UInt32 lenEnd = ((lenMain >= repLens[repMaxIndex]) ? lenMain : repLens[repMaxIndex]);
 
-            if (lenEnd < 2)
-            {
+            if (lenEnd < 2) {
                 backRes = _optimum[1].BackPrev;
                 return 1;
             }
@@ -646,18 +570,15 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 _optimum[len--].Price = kIfinityPrice;
             while (len >= 2);
 
-            for (i = 0; i < LzmaBase.kNumRepDistances; i++)
-            {
+            for (i = 0; i < LzmaBase.kNumRepDistances; i++) {
                 UInt32 repLen = repLens[i];
                 if (repLen < 2)
                     continue;
                 UInt32 price = repMatchPrice + GetPureRepPrice(i, _state, posState);
-                do
-                {
+                do {
                     UInt32 curAndLenPrice = price + _repMatchLenEncoder.GetPrice(repLen - 2, posState);
                     Optimal optimum = _optimum[repLen];
-                    if (curAndLenPrice < optimum.Price)
-                    {
+                    if (curAndLenPrice < optimum.Price) {
                         optimum.Price = curAndLenPrice;
                         optimum.PosPrev = 0;
                         optimum.BackPrev = i;
@@ -670,25 +591,21 @@ namespace Sandwych.Compression.Algorithms.Lzma
             UInt32 normalMatchPrice = matchPrice + _isRep[_state.Index].GetPrice0();
 
             len = ((repLens[0] >= 2) ? repLens[0] + 1 : 2);
-            if (len <= lenMain)
-            {
+            if (len <= lenMain) {
                 UInt32 offs = 0;
                 while (len > _matchDistances[offs])
                     offs += 2;
-                for (; ; len++)
-                {
+                for (; ; len++) {
                     UInt32 distance = _matchDistances[offs + 1];
                     UInt32 curAndLenPrice = normalMatchPrice + GetPosLenPrice(distance, len, posState);
                     Optimal optimum = _optimum[len];
-                    if (curAndLenPrice < optimum.Price)
-                    {
+                    if (curAndLenPrice < optimum.Price) {
                         optimum.Price = curAndLenPrice;
                         optimum.PosPrev = 0;
                         optimum.BackPrev = distance + LzmaBase.kNumRepDistances;
                         optimum.Prev1IsChar = false;
                     }
-                    if (len == _matchDistances[offs])
-                    {
+                    if (len == _matchDistances[offs]) {
                         offs += 2;
                         if (offs == numDistancePairs)
                             break;
@@ -698,15 +615,13 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
             UInt32 cur = 0;
 
-            while (true)
-            {
+            while (true) {
                 cur++;
                 if (cur == lenEnd)
                     return Backward(out backRes, cur);
                 UInt32 newLen;
                 ReadMatchDistances(out newLen, out numDistancePairs);
-                if (newLen >= _numFastBytes)
-                {
+                if (newLen >= _numFastBytes) {
                     _numDistancePairs = numDistancePairs;
                     _longestMatchLength = newLen;
                     _longestMatchWasFound = true;
@@ -715,11 +630,9 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 position++;
                 UInt32 posPrev = _optimum[cur].PosPrev;
                 LzmaBase.State state;
-                if (_optimum[cur].Prev1IsChar)
-                {
+                if (_optimum[cur].Prev1IsChar) {
                     posPrev--;
-                    if (_optimum[cur].Prev2)
-                    {
+                    if (_optimum[cur].Prev2) {
                         state = _optimum[_optimum[cur].PosPrev2].State;
                         if (_optimum[cur].BackPrev2 < LzmaBase.kNumRepDistances)
                             state.UpdateRep();
@@ -732,24 +645,20 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 }
                 else
                     state = _optimum[posPrev].State;
-                if (posPrev == cur - 1)
-                {
+                if (posPrev == cur - 1) {
                     if (_optimum[cur].IsShortRep())
                         state.UpdateShortRep();
                     else
                         state.UpdateChar();
                 }
-                else
-                {
+                else {
                     UInt32 pos;
-                    if (_optimum[cur].Prev1IsChar && _optimum[cur].Prev2)
-                    {
+                    if (_optimum[cur].Prev1IsChar && _optimum[cur].Prev2) {
                         posPrev = _optimum[cur].PosPrev2;
                         pos = _optimum[cur].BackPrev2;
                         state.UpdateRep();
                     }
-                    else
-                    {
+                    else {
                         pos = _optimum[cur].BackPrev;
                         if (pos < LzmaBase.kNumRepDistances)
                             state.UpdateRep();
@@ -757,39 +666,33 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             state.UpdateMatch();
                     }
                     Optimal opt = _optimum[posPrev];
-                    if (pos < LzmaBase.kNumRepDistances)
-                    {
-                        if (pos == 0)
-                        {
+                    if (pos < LzmaBase.kNumRepDistances) {
+                        if (pos == 0) {
                             reps[0] = opt.Backs0;
                             reps[1] = opt.Backs1;
                             reps[2] = opt.Backs2;
                             reps[3] = opt.Backs3;
                         }
-                        else if (pos == 1)
-                        {
+                        else if (pos == 1) {
                             reps[0] = opt.Backs1;
                             reps[1] = opt.Backs0;
                             reps[2] = opt.Backs2;
                             reps[3] = opt.Backs3;
                         }
-                        else if (pos == 2)
-                        {
+                        else if (pos == 2) {
                             reps[0] = opt.Backs2;
                             reps[1] = opt.Backs0;
                             reps[2] = opt.Backs1;
                             reps[3] = opt.Backs3;
                         }
-                        else
-                        {
+                        else {
                             reps[0] = opt.Backs3;
                             reps[1] = opt.Backs0;
                             reps[2] = opt.Backs1;
                             reps[3] = opt.Backs2;
                         }
                     }
-                    else
-                    {
+                    else {
                         reps[0] = (pos - LzmaBase.kNumRepDistances);
                         reps[1] = opt.Backs0;
                         reps[2] = opt.Backs1;
@@ -816,8 +719,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 Optimal nextOptimum = _optimum[cur + 1];
 
                 bool nextIsChar = false;
-                if (curAnd1Price < nextOptimum.Price)
-                {
+                if (curAnd1Price < nextOptimum.Price) {
                     nextOptimum.Price = curAnd1Price;
                     nextOptimum.PosPrev = cur;
                     nextOptimum.MakeAsChar();
@@ -828,11 +730,9 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 repMatchPrice = matchPrice + _isRep[state.Index].GetPrice1();
 
                 if (matchByte == currentByte &&
-                    !(nextOptimum.PosPrev < cur && nextOptimum.BackPrev == 0))
-                {
+                    !(nextOptimum.PosPrev < cur && nextOptimum.BackPrev == 0)) {
                     UInt32 shortRepPrice = repMatchPrice + GetRepLen1Price(state, posState);
-                    if (shortRepPrice <= nextOptimum.Price)
-                    {
+                    if (shortRepPrice <= nextOptimum.Price) {
                         nextOptimum.Price = shortRepPrice;
                         nextOptimum.PosPrev = cur;
                         nextOptimum.MakeAsShortRep();
@@ -848,13 +748,11 @@ namespace Sandwych.Compression.Algorithms.Lzma
                     continue;
                 if (numAvailableBytes > _numFastBytes)
                     numAvailableBytes = _numFastBytes;
-                if (!nextIsChar && matchByte != currentByte)
-                {
+                if (!nextIsChar && matchByte != currentByte) {
                     // try Literal + rep0
                     UInt32 t = Math.Min(numAvailableBytesFull - 1, _numFastBytes);
                     UInt32 lenTest2 = _matchFinder.GetMatchLen(0, reps[0], t);
-                    if (lenTest2 >= 2)
-                    {
+                    if (lenTest2 >= 2) {
                         LzmaBase.State state2 = state;
                         state2.UpdateChar();
                         UInt32 posStateNext = (position + 1) & _posStateMask;
@@ -868,8 +766,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             UInt32 curAndLenPrice = nextRepMatchPrice + GetRepPrice(
                                 0, lenTest2, state2, posStateNext);
                             Optimal optimum = _optimum[offset];
-                            if (curAndLenPrice < optimum.Price)
-                            {
+                            if (curAndLenPrice < optimum.Price) {
                                 optimum.Price = curAndLenPrice;
                                 optimum.PosPrev = cur + 1;
                                 optimum.BackPrev = 0;
@@ -882,20 +779,17 @@ namespace Sandwych.Compression.Algorithms.Lzma
 
                 UInt32 startLen = 2; // speed optimization 
 
-                for (UInt32 repIndex = 0; repIndex < LzmaBase.kNumRepDistances; repIndex++)
-                {
+                for (UInt32 repIndex = 0; repIndex < LzmaBase.kNumRepDistances; repIndex++) {
                     UInt32 lenTest = _matchFinder.GetMatchLen(0 - 1, reps[repIndex], numAvailableBytes);
                     if (lenTest < 2)
                         continue;
                     UInt32 lenTestTemp = lenTest;
-                    do
-                    {
+                    do {
                         while (lenEnd < cur + lenTest)
                             _optimum[++lenEnd].Price = kIfinityPrice;
                         UInt32 curAndLenPrice = repMatchPrice + GetRepPrice(repIndex, lenTest, state, posState);
                         Optimal optimum = _optimum[cur + lenTest];
-                        if (curAndLenPrice < optimum.Price)
-                        {
+                        if (curAndLenPrice < optimum.Price) {
                             optimum.Price = curAndLenPrice;
                             optimum.PosPrev = cur;
                             optimum.BackPrev = repIndex;
@@ -909,12 +803,10 @@ namespace Sandwych.Compression.Algorithms.Lzma
                         startLen = lenTest + 1;
 
                     // if (_maxMode)
-                    if (lenTest < numAvailableBytesFull)
-                    {
+                    if (lenTest < numAvailableBytesFull) {
                         UInt32 t = Math.Min(numAvailableBytesFull - 1 - lenTest, _numFastBytes);
                         UInt32 lenTest2 = _matchFinder.GetMatchLen((Int32)lenTest, reps[repIndex], t);
-                        if (lenTest2 >= 2)
-                        {
+                        if (lenTest2 >= 2) {
                             LzmaBase.State state2 = state;
                             state2.UpdateRep();
                             UInt32 posStateNext = (position + lenTest) & _posStateMask;
@@ -937,8 +829,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                                     _optimum[++lenEnd].Price = kIfinityPrice;
                                 UInt32 curAndLenPrice = nextRepMatchPrice + GetRepPrice(0, lenTest2, state2, posStateNext);
                                 Optimal optimum = _optimum[cur + offset];
-                                if (curAndLenPrice < optimum.Price)
-                                {
+                                if (curAndLenPrice < optimum.Price) {
                                     optimum.Price = curAndLenPrice;
                                     optimum.PosPrev = cur + lenTest + 1;
                                     optimum.BackPrev = 0;
@@ -952,15 +843,13 @@ namespace Sandwych.Compression.Algorithms.Lzma
                     }
                 }
 
-                if (newLen > numAvailableBytes)
-                {
+                if (newLen > numAvailableBytes) {
                     newLen = numAvailableBytes;
                     for (numDistancePairs = 0; newLen > _matchDistances[numDistancePairs]; numDistancePairs += 2) ;
                     _matchDistances[numDistancePairs] = newLen;
                     numDistancePairs += 2;
                 }
-                if (newLen >= startLen)
-                {
+                if (newLen >= startLen) {
                     normalMatchPrice = matchPrice + _isRep[state.Index].GetPrice0();
                     while (lenEnd < cur + newLen)
                         _optimum[++lenEnd].Price = kIfinityPrice;
@@ -969,27 +858,22 @@ namespace Sandwych.Compression.Algorithms.Lzma
                     while (startLen > _matchDistances[offs])
                         offs += 2;
 
-                    for (UInt32 lenTest = startLen; ; lenTest++)
-                    {
+                    for (UInt32 lenTest = startLen; ; lenTest++) {
                         UInt32 curBack = _matchDistances[offs + 1];
                         UInt32 curAndLenPrice = normalMatchPrice + GetPosLenPrice(curBack, lenTest, posState);
                         Optimal optimum = _optimum[cur + lenTest];
-                        if (curAndLenPrice < optimum.Price)
-                        {
+                        if (curAndLenPrice < optimum.Price) {
                             optimum.Price = curAndLenPrice;
                             optimum.PosPrev = cur;
                             optimum.BackPrev = curBack + LzmaBase.kNumRepDistances;
                             optimum.Prev1IsChar = false;
                         }
 
-                        if (lenTest == _matchDistances[offs])
-                        {
-                            if (lenTest < numAvailableBytesFull)
-                            {
+                        if (lenTest == _matchDistances[offs]) {
+                            if (lenTest < numAvailableBytesFull) {
                                 UInt32 t = Math.Min(numAvailableBytesFull - 1 - lenTest, _numFastBytes);
                                 UInt32 lenTest2 = _matchFinder.GetMatchLen((Int32)lenTest, curBack, t);
-                                if (lenTest2 >= 2)
-                                {
+                                if (lenTest2 >= 2) {
                                     LzmaBase.State state2 = state;
                                     state2.UpdateMatch();
                                     UInt32 posStateNext = (position + lenTest) & _posStateMask;
@@ -1010,8 +894,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                                         _optimum[++lenEnd].Price = kIfinityPrice;
                                     curAndLenPrice = nextRepMatchPrice + GetRepPrice(0, lenTest2, state2, posStateNext);
                                     optimum = _optimum[cur + offset];
-                                    if (curAndLenPrice < optimum.Price)
-                                    {
+                                    if (curAndLenPrice < optimum.Price) {
                                         optimum.Price = curAndLenPrice;
                                         optimum.PosPrev = cur + lenTest + 1;
                                         optimum.BackPrev = 0;
@@ -1031,14 +914,12 @@ namespace Sandwych.Compression.Algorithms.Lzma
             }
         }
 
-        bool ChangePair(UInt32 smallDist, UInt32 bigDist)
-        {
+        bool ChangePair(UInt32 smallDist, UInt32 bigDist) {
             const int kDif = 7;
             return (smallDist < ((UInt32)(1) << (32 - kDif)) && bigDist >= (smallDist << kDif));
         }
 
-        void WriteEndMarker(UInt32 posState)
-        {
+        void WriteEndMarker(UInt32 posState) {
             if (!_writeEndMark)
                 return;
 
@@ -1056,44 +937,37 @@ namespace Sandwych.Compression.Algorithms.Lzma
             _posAlignEncoder.ReverseEncode(_rangeEncoder, posReduced & LzmaBase.kAlignMask);
         }
 
-        void Flush(UInt32 nowPos)
-        {
+        void Flush(UInt32 nowPos) {
             ReleaseMFStream();
             WriteEndMarker(nowPos & _posStateMask);
             _rangeEncoder.FlushData();
             _rangeEncoder.FlushStream();
         }
 
-        public void CodeOneBlock(out Int64 inSize, out Int64 outSize, out bool finished)
-        {
+        public void CodeOneBlock(out Int64 inSize, out Int64 outSize, out bool finished) {
             inSize = 0;
             outSize = 0;
             finished = true;
 
-            if (_inStream != null)
-            {
+            if (_inStream != null) {
                 _matchFinder.SetStream(_inStream);
                 _matchFinder.Init();
                 _needReleaseMFStream = true;
                 _inStream = null;
-                if (_trainSize > 0)
-                {
+                if (_trainSize > 0) {
                     _matchFinder.Skip(_trainSize);
                 }
             }
 
-            if (_finished)
-            {
+            if (_finished) {
                 return;
             }
             _finished = true;
 
 
             Int64 progressPosValuePrev = nowPos64;
-            if (nowPos64 == 0)
-            {
-                if (_matchFinder.GetNumAvailableBytes() == 0)
-                {
+            if (nowPos64 == 0) {
+                if (_matchFinder.GetNumAvailableBytes() == 0) {
                     Flush((UInt32)nowPos64);
                     return;
                 }
@@ -1108,25 +982,21 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 _additionalOffset--;
                 nowPos64++;
             }
-            if (_matchFinder.GetNumAvailableBytes() == 0)
-            {
+            if (_matchFinder.GetNumAvailableBytes() == 0) {
                 Flush((UInt32)nowPos64);
                 return;
             }
-            while (true)
-            {
+            while (true) {
                 UInt32 pos;
                 UInt32 len = GetOptimum((UInt32)nowPos64, out pos);
 
                 UInt32 posState = ((UInt32)nowPos64) & _posStateMask;
                 UInt32 complexState = (_state.Index << LzmaBase.kNumPosStatesBitsMax) + posState;
-                if (len == 1 && pos == 0xFFFFFFFF)
-                {
+                if (len == 1 && pos == 0xFFFFFFFF) {
                     _isMatch[complexState].Encode(_rangeEncoder, 0);
                     Byte curByte = _matchFinder.GetIndexByte((Int32)(0 - _additionalOffset));
                     LiteralEncoder.Encoder2 subCoder = _literalEncoder.GetSubCoder((UInt32)nowPos64, _previousByte);
-                    if (!_state.IsCharState())
-                    {
+                    if (!_state.IsCharState()) {
                         Byte matchByte = _matchFinder.GetIndexByte((Int32)(0 - _repDistances[0] - 1 - _additionalOffset));
                         subCoder.EncodeMatched(_rangeEncoder, matchByte, curByte);
                     }
@@ -1135,48 +1005,40 @@ namespace Sandwych.Compression.Algorithms.Lzma
                     _previousByte = curByte;
                     _state.UpdateChar();
                 }
-                else
-                {
+                else {
                     _isMatch[complexState].Encode(_rangeEncoder, 1);
-                    if (pos < LzmaBase.kNumRepDistances)
-                    {
+                    if (pos < LzmaBase.kNumRepDistances) {
                         _isRep[_state.Index].Encode(_rangeEncoder, 1);
-                        if (pos == 0)
-                        {
+                        if (pos == 0) {
                             _isRepG0[_state.Index].Encode(_rangeEncoder, 0);
                             if (len == 1)
                                 _isRep0Long[complexState].Encode(_rangeEncoder, 0);
                             else
                                 _isRep0Long[complexState].Encode(_rangeEncoder, 1);
                         }
-                        else
-                        {
+                        else {
                             _isRepG0[_state.Index].Encode(_rangeEncoder, 1);
                             if (pos == 1)
                                 _isRepG1[_state.Index].Encode(_rangeEncoder, 0);
-                            else
-                            {
+                            else {
                                 _isRepG1[_state.Index].Encode(_rangeEncoder, 1);
                                 _isRepG2[_state.Index].Encode(_rangeEncoder, pos - 2);
                             }
                         }
                         if (len == 1)
                             _state.UpdateShortRep();
-                        else
-                        {
+                        else {
                             _repMatchLenEncoder.Encode(_rangeEncoder, len - LzmaBase.kMatchMinLen, posState);
                             _state.UpdateRep();
                         }
                         UInt32 distance = _repDistances[pos];
-                        if (pos != 0)
-                        {
+                        if (pos != 0) {
                             for (UInt32 i = pos; i >= 1; i--)
                                 _repDistances[i] = _repDistances[i - 1];
                             _repDistances[0] = distance;
                         }
                     }
-                    else
-                    {
+                    else {
                         _isRep[_state.Index].Encode(_rangeEncoder, 0);
                         _state.UpdateMatch();
                         _lenEncoder.Encode(_rangeEncoder, len - LzmaBase.kMatchMinLen, posState);
@@ -1185,8 +1047,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                         UInt32 lenToPosState = LzmaBase.GetLenToPosState(len);
                         _posSlotEncoder[lenToPosState].Encode(_rangeEncoder, posSlot);
 
-                        if (posSlot >= LzmaBase.kStartPosModelIndex)
-                        {
+                        if (posSlot >= LzmaBase.kStartPosModelIndex) {
                             int footerBits = (int)((posSlot >> 1) - 1);
                             UInt32 baseVal = ((2 | (posSlot & 1)) << footerBits);
                             UInt32 posReduced = pos - baseVal;
@@ -1194,8 +1055,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             if (posSlot < LzmaBase.kEndPosModelIndex)
                                 RangeCoder.RangeBitTreeEncoder.ReverseEncode(_posEncoders,
                                         baseVal - posSlot - 1, _rangeEncoder, footerBits, posReduced);
-                            else
-                            {
+                            else {
                                 _rangeEncoder.EncodeDirectBits(posReduced >> LzmaBase.kNumAlignBits, footerBits - LzmaBase.kNumAlignBits);
                                 _posAlignEncoder.ReverseEncode(_rangeEncoder, posReduced & LzmaBase.kAlignMask);
                                 _alignPriceCount++;
@@ -1211,8 +1071,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                 }
                 _additionalOffset -= len;
                 nowPos64 += len;
-                if (_additionalOffset == 0)
-                {
+                if (_additionalOffset == 0) {
                     // if (!_fastMode)
                     if (_matchPriceCount >= (1 << 7))
                         FillDistancesPrices();
@@ -1220,14 +1079,12 @@ namespace Sandwych.Compression.Algorithms.Lzma
                         FillAlignPrices();
                     inSize = nowPos64;
                     outSize = _rangeEncoder.GetProcessedSizeAdd();
-                    if (_matchFinder.GetNumAvailableBytes() == 0)
-                    {
+                    if (_matchFinder.GetNumAvailableBytes() == 0) {
                         Flush((UInt32)nowPos64);
                         return;
                     }
 
-                    if (nowPos64 - progressPosValuePrev >= (1 << 12))
-                    {
+                    if (nowPos64 - progressPosValuePrev >= (1 << 12)) {
                         _finished = false;
                         finished = false;
                         return;
@@ -1236,34 +1093,28 @@ namespace Sandwych.Compression.Algorithms.Lzma
             }
         }
 
-        void ReleaseMFStream()
-        {
-            if (_matchFinder != null && _needReleaseMFStream)
-            {
+        void ReleaseMFStream() {
+            if (_matchFinder != null && _needReleaseMFStream) {
                 _matchFinder.ReleaseStream();
                 _needReleaseMFStream = false;
             }
         }
 
-        void SetOutStream(Stream outStream)
-        {
+        void SetOutStream(Stream outStream) {
             _rangeEncoder.SetStream(outStream);
         }
 
-        void ReleaseOutStream()
-        {
+        void ReleaseOutStream() {
             _rangeEncoder.ReleaseStream();
         }
 
-        void ReleaseStreams()
-        {
+        void ReleaseStreams() {
             ReleaseMFStream();
             ReleaseOutStream();
         }
 
         void SetStreams(Stream inStream, Stream outStream,
-                Int64 inSize, Int64 outSize)
-        {
+                Int64 inSize, Int64 outSize) {
             _inStream = inStream;
             _finished = false;
             Create();
@@ -1285,28 +1136,23 @@ namespace Sandwych.Compression.Algorithms.Lzma
         }
 
 
-        public override void Code(Stream inStream, Stream outStream, Int64 inSize = -1, Int64 outSize = -1, ICodingProgress progress = null)
-        {
+        public override void Code(Stream inStream, Stream outStream, Int64 inSize = -1, Int64 outSize = -1, ICodingProgress progress = null) {
             _needReleaseMFStream = false;
-            try
-            {
+            try {
                 SetStreams(inStream, outStream, inSize, outSize);
-                while (true)
-                {
+                while (true) {
                     Int64 processedInSize;
                     Int64 processedOutSize;
                     bool finished;
                     CodeOneBlock(out processedInSize, out processedOutSize, out finished);
                     if (finished)
                         return;
-                    if (progress != null)
-                    {
+                    if (progress != null) {
                         progress.Report(new CodingProgressInfo(processedInSize, processedOutSize));
                     }
                 }
             }
-            finally
-            {
+            finally {
                 ReleaseStreams();
             }
         }
@@ -1314,8 +1160,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
         const int kPropSize = 5;
         Byte[] properties = new Byte[kPropSize];
 
-        public void WriteCoderProperties(System.IO.Stream outStream)
-        {
+        public void WriteCoderProperties(System.IO.Stream outStream) {
             properties[0] = (Byte)((_posStateBits * 5 + _numLiteralPosStateBits) * 9 + _numLiteralContextBits);
             for (int i = 0; i < 4; i++)
                 properties[1 + i] = (Byte)((_dictionarySize >> (8 * i)) & 0xFF);
@@ -1325,47 +1170,39 @@ namespace Sandwych.Compression.Algorithms.Lzma
         UInt32[] tempPrices = new UInt32[LzmaBase.kNumFullDistances];
         UInt32 _matchPriceCount;
 
-        void FillDistancesPrices()
-        {
-            for (UInt32 i = LzmaBase.kStartPosModelIndex; i < LzmaBase.kNumFullDistances; i++)
-            {
+        void FillDistancesPrices() {
+            for (UInt32 i = LzmaBase.kStartPosModelIndex; i < LzmaBase.kNumFullDistances; i++) {
                 UInt32 posSlot = GetPosSlot(i);
                 int footerBits = (int)((posSlot >> 1) - 1);
                 UInt32 baseVal = ((2 | (posSlot & 1)) << footerBits);
                 tempPrices[i] = RangeBitTreeEncoder.ReverseGetPrice(_posEncoders, baseVal - posSlot - 1, footerBits, i - baseVal);
             }
 
-            for (UInt32 lenToPosState = 0; lenToPosState < LzmaBase.kNumLenToPosStates; lenToPosState++)
-            {
+            for (UInt32 lenToPosState = 0; lenToPosState < LzmaBase.kNumLenToPosStates; lenToPosState++) {
                 UInt32 posSlot;
                 RangeBitTreeEncoder encoder = _posSlotEncoder[lenToPosState];
 
                 UInt32 st = (lenToPosState << LzmaBase.kNumPosSlotBits);
-                for (posSlot = 0; posSlot < _distTableSize; posSlot++)
-                {
+                for (posSlot = 0; posSlot < _distTableSize; posSlot++) {
                     _posSlotPrices[st + posSlot] = encoder.GetPrice(posSlot);
                 }
-                for (posSlot = LzmaBase.kEndPosModelIndex; posSlot < _distTableSize; posSlot++)
-                {
+                for (posSlot = LzmaBase.kEndPosModelIndex; posSlot < _distTableSize; posSlot++) {
                     _posSlotPrices[st + posSlot] += ((((posSlot >> 1) - 1) - LzmaBase.kNumAlignBits) << RangeBitEncoder.kNumBitPriceShiftBits);
                 }
 
                 UInt32 st2 = lenToPosState * LzmaBase.kNumFullDistances;
                 UInt32 i;
-                for (i = 0; i < LzmaBase.kStartPosModelIndex; i++)
-                {
+                for (i = 0; i < LzmaBase.kStartPosModelIndex; i++) {
                     _distancesPrices[st2 + i] = _posSlotPrices[st + i];
                 }
-                for (; i < LzmaBase.kNumFullDistances; i++)
-                {
+                for (; i < LzmaBase.kNumFullDistances; i++) {
                     _distancesPrices[st2 + i] = _posSlotPrices[st + GetPosSlot(i)] + tempPrices[i];
                 }
             }
             _matchPriceCount = 0;
         }
 
-        void FillAlignPrices()
-        {
+        void FillAlignPrices() {
             for (UInt32 i = 0; i < LzmaBase.kAlignTableSize; i++)
                 _alignPrices[i] = _posAlignEncoder.ReverseGetPrice(i);
             _alignPriceCount = 0;
@@ -1378,23 +1215,18 @@ namespace Sandwych.Compression.Algorithms.Lzma
             "BT4",
         };
 
-        static int FindMatchFinder(string s)
-        {
+        static int FindMatchFinder(string s) {
             for (int m = 0; m < kMatchFinderIDs.Length; m++)
                 if (s == kMatchFinderIDs[m])
                     return m;
             return -1;
         }
 
-        public void SetCoderProperties(IReadOnlyDictionary<CoderPropID, object> properties)
-        {
-            foreach (var p in properties)
-            {
+        public void SetCoderProperties(IReadOnlyDictionary<CoderPropID, object> properties) {
+            foreach (var p in properties) {
                 object prop = p.Value;
-                switch (p.Key)
-                {
-                    case CoderPropID.NumFastBytes:
-                        {
+                switch (p.Key) {
+                    case CoderPropID.NumFastBytes: {
                             if (!(prop is Int32))
                                 throw new InvalidParamException();
                             Int32 numFastBytes = (Int32)prop;
@@ -1403,8 +1235,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _numFastBytes = (UInt32)numFastBytes;
                             break;
                         }
-                    case CoderPropID.Algorithm:
-                        {
+                    case CoderPropID.Algorithm: {
                             /*
                             if (!(prop is Int32))
                                 throw new InvalidParamException();
@@ -1414,8 +1245,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             */
                             throw new NotSupportedException();
                         }
-                    case CoderPropID.MatchFinder:
-                        {
+                    case CoderPropID.MatchFinder: {
                             if (!(prop is String))
                                 throw new InvalidParamException();
                             EMatchFinderType matchFinderIndexPrev = _matchFinderType;
@@ -1423,15 +1253,13 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             if (m < 0)
                                 throw new InvalidParamException();
                             _matchFinderType = (EMatchFinderType)m;
-                            if (_matchFinder != null && matchFinderIndexPrev != _matchFinderType)
-                            {
+                            if (_matchFinder != null && matchFinderIndexPrev != _matchFinderType) {
                                 _dictionarySizePrev = 0xFFFFFFFF;
                                 _matchFinder = null;
                             }
                             break;
                         }
-                    case CoderPropID.DictionarySize:
-                        {
+                    case CoderPropID.DictionarySize: {
                             const int kDicLogSizeMaxCompress = 30;
                             if (!(prop is Int32))
                                 throw new InvalidParamException(); ;
@@ -1447,8 +1275,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _distTableSize = (UInt32)dicLogSize * 2;
                             break;
                         }
-                    case CoderPropID.PosStateBits:
-                        {
+                    case CoderPropID.PosStateBits: {
                             if (!(prop is Int32))
                                 throw new InvalidParamException();
                             Int32 v = (Int32)prop;
@@ -1458,8 +1285,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _posStateMask = (((UInt32)1) << (int)_posStateBits) - 1;
                             break;
                         }
-                    case CoderPropID.LitPosBits:
-                        {
+                    case CoderPropID.LitPosBits: {
                             if (!(prop is Int32))
                                 throw new InvalidParamException();
                             Int32 v = (Int32)prop;
@@ -1468,8 +1294,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _numLiteralPosStateBits = (int)v;
                             break;
                         }
-                    case CoderPropID.LitContextBits:
-                        {
+                    case CoderPropID.LitContextBits: {
                             if (!(prop is Int32))
                                 throw new InvalidParamException();
                             Int32 v = (Int32)prop;
@@ -1478,8 +1303,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
                             _numLiteralContextBits = (int)v;
                             break;
                         }
-                    case CoderPropID.EndMarker:
-                        {
+                    case CoderPropID.EndMarker: {
                             if (!(prop is Boolean))
                                 throw new InvalidParamException();
                             SetWriteEndMarkerMode((Boolean)prop);
@@ -1492,8 +1316,7 @@ namespace Sandwych.Compression.Algorithms.Lzma
         }
 
         uint _trainSize = 0;
-        public void SetTrainSize(uint trainSize)
-        {
+        public void SetTrainSize(uint trainSize) {
             _trainSize = trainSize;
         }
 

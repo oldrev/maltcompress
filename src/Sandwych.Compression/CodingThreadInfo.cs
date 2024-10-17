@@ -1,15 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace Sandwych.Compression;
 
-internal class CodingThreadInfo
-{
-    public CodingThreadInfo(ICoder coder, Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
-    {
+internal class CodingThreadInfo {
+    public CodingThreadInfo(ICoder coder, Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null) {
         this.Coder = coder;
         this.InStream = inStream;
         this.OutStream = outStream;

@@ -1,10 +1,8 @@
 using System;
 using System.IO;
 
-namespace Sandwych.Compression.Algorithms.RangeCoder
-{
-    public class RangeEncoder
-    {
+namespace Sandwych.Compression.Algorithms.RangeCoder {
+    public class RangeEncoder {
         public const uint kTopValue = (1 << 24);
 
         private Stream _outStream;
@@ -15,18 +13,15 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
         byte _cache;
         long _startPosition;
 
-        public void SetStream(Stream stream)
-        {
+        public void SetStream(Stream stream) {
             _outStream = stream;
         }
 
-        public void ReleaseStream()
-        {
+        public void ReleaseStream() {
             _outStream = null;
         }
 
-        public void Init()
-        {
+        public void Init() {
             _startPosition = _outStream.Position;
             Low = 0;
             Range = 0xFFFFFFFF;
@@ -34,42 +29,33 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
             _cache = 0;
         }
 
-        public void FlushData()
-        {
-            for (int i = 0; i < 5; i++)
-            {
+        public void FlushData() {
+            for (int i = 0; i < 5; i++) {
                 ShiftLow();
             }
         }
 
-        public void FlushStream()
-        {
+        public void FlushStream() {
             _outStream.Flush();
         }
 
-        public void CloseStream()
-        {
+        public void CloseStream() {
             _outStream.Dispose();
         }
 
-        public void Encode(uint start, uint size, uint total)
-        {
+        public void Encode(uint start, uint size, uint total) {
             Low += start * (Range /= total);
             Range *= size;
-            while (Range < kTopValue)
-            {
+            while (Range < kTopValue) {
                 Range <<= 8;
                 ShiftLow();
             }
         }
 
-        public void ShiftLow()
-        {
-            if ((uint)Low < (uint)0xFF000000 || (uint)(Low >> 32) == 1)
-            {
+        public void ShiftLow() {
+            if ((uint)Low < (uint)0xFF000000 || (uint)(Low >> 32) == 1) {
                 byte temp = _cache;
-                do
-                {
+                do {
                     _outStream.WriteByte((byte)(temp + (Low >> 32)));
                     temp = 0xFF;
                 }
@@ -80,37 +66,29 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
             Low = ((uint)Low) << 8;
         }
 
-        public void EncodeDirectBits(uint v, int numTotalBits)
-        {
-            for (int i = numTotalBits - 1; i >= 0; i--)
-            {
+        public void EncodeDirectBits(uint v, int numTotalBits) {
+            for (int i = numTotalBits - 1; i >= 0; i--) {
                 Range >>= 1;
-                if (((v >> i) & 1) == 1)
-                {
+                if (((v >> i) & 1) == 1) {
                     Low += Range;
                 }
-                if (Range < kTopValue)
-                {
+                if (Range < kTopValue) {
                     Range <<= 8;
                     ShiftLow();
                 }
             }
         }
 
-        public void EncodeBit(uint size0, int numTotalBits, uint symbol)
-        {
+        public void EncodeBit(uint size0, int numTotalBits, uint symbol) {
             uint newBound = (Range >> numTotalBits) * size0;
-            if (symbol == 0)
-            {
+            if (symbol == 0) {
                 Range = newBound;
             }
-            else
-            {
+            else {
                 Low += newBound;
                 Range -= newBound;
             }
-            while (Range < kTopValue)
-            {
+            while (Range < kTopValue) {
                 Range <<= 8;
                 ShiftLow();
             }
@@ -121,51 +99,42 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
     }
 
 
-    public class RangeDecoder
-    {
+    public class RangeDecoder {
         public const uint kTopValue = (1 << 24);
         public uint Range;
         public uint Code;
         // public Buffer.InBuffer Stream = new Buffer.InBuffer(1 << 16);
         public Stream _inStream;
 
-        public void Init(Stream stream)
-        {
+        public void Init(Stream stream) {
             // Stream.Init(stream);
             _inStream = stream;
 
             Code = 0;
             Range = 0xFFFFFFFF;
-            for (int i = 0; i < 5; i++)
-            {
+            for (int i = 0; i < 5; i++) {
                 Code = (Code << 8) | (byte)_inStream.ReadByte();
             }
         }
 
-        public void ReleaseStream()
-        {
+        public void ReleaseStream() {
             // Stream.ReleaseStream();
             _inStream = null;
         }
 
-        public void CloseStream()
-        {
+        public void CloseStream() {
             _inStream.Dispose();
         }
 
-        public void Normalize()
-        {
-            while (Range < kTopValue)
-            {
+        public void Normalize() {
+            while (Range < kTopValue) {
                 Code = (Code << 8) | (byte)_inStream.ReadByte();
                 Range <<= 8;
             }
         }
 
-        public void Normalize2()
-        {
-            if (Range < kTopValue)
-            {
+        public void Normalize2() {
+            if (Range < kTopValue) {
                 Code = (Code << 8) | (byte)_inStream.ReadByte();
                 Range <<= 8;
             }
@@ -173,27 +142,23 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
 
         public uint GetThreshold(uint total) => Code / (Range /= total);
 
-        public void Decode(uint start, uint size, uint total)
-        {
+        public void Decode(uint start, uint size, uint total) {
             Code -= start * Range;
             Range *= size;
             Normalize();
         }
 
-        public uint DecodeDirectBits(int numTotalBits)
-        {
+        public uint DecodeDirectBits(int numTotalBits) {
             uint range = Range;
             uint code = Code;
             uint result = 0;
-            for (int i = numTotalBits; i > 0; i--)
-            {
+            for (int i = numTotalBits; i > 0; i--) {
                 range >>= 1;
                 uint t = (code - range) >> 31;
                 code -= range & (t - 1);
                 result = (result << 1) | (1 - t);
 
-                if (range < kTopValue)
-                {
+                if (range < kTopValue) {
                     code = (code << 8) | (byte)_inStream.ReadByte();
                     range <<= 8;
                 }
@@ -203,17 +168,14 @@ namespace Sandwych.Compression.Algorithms.RangeCoder
             return result;
         }
 
-        public uint DecodeBit(uint size0, int numTotalBits)
-        {
+        public uint DecodeBit(uint size0, int numTotalBits) {
             uint newBound = (Range >> numTotalBits) * size0;
             uint symbol;
-            if (Code < newBound)
-            {
+            if (Code < newBound) {
                 symbol = 0;
                 Range = newBound;
             }
-            else
-            {
+            else {
                 symbol = 1;
                 Code -= newBound;
                 Range -= newBound;

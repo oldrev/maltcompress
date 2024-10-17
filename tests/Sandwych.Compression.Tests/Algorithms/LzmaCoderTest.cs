@@ -1,18 +1,15 @@
-﻿using Sandwych.Compression.Algorithms.Lzma;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Sandwych.Compression.Algorithms.Lzma;
 using Xunit;
 
-namespace Sandwych.Compression.Tests.Algorithms
-{
-    public class LzmaCoderTest : AbstractCompressionTest
-    {
+namespace Sandwych.Compression.Tests.Algorithms {
+    public class LzmaCoderTest : AbstractCompressionTest {
 
         [Fact]
-        public void LzmaCompressAndDecompressShouldBeOk()
-        {
+        public void LzmaCompressAndDecompressShouldBeOk() {
             var source = this.CreateCompressionSourceData();
             byte[] compressedBytes = null;
             byte[] properties = null;
@@ -23,8 +20,7 @@ namespace Sandwych.Compression.Tests.Algorithms
 
             using (var inputStream = new MemoryStream(source, false))
             using (var outputStream = new MemoryStream())
-            using (var propertiesStream = new MemoryStream())
-            {
+            using (var propertiesStream = new MemoryStream()) {
                 var encoder = new LzmaEncoder();
                 encoder.SetCoderProperties(encoderProperties);
                 encoder.WriteCoderProperties(propertiesStream);
@@ -36,8 +32,7 @@ namespace Sandwych.Compression.Tests.Algorithms
             }
 
             using (var inputStream = new MemoryStream(compressedBytes, false))
-            using (var outputStream = new MemoryStream())
-            {
+            using (var outputStream = new MemoryStream()) {
                 var decoder = new LzmaDecoder();
                 decoder.SetDecoderProperties(properties);
                 decoder.Code(inputStream, outputStream, compressedBytes.Length, source.Length, null);

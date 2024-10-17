@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 
 namespace Sandwych.Compression.IO;
 
-public interface IStreamConnector : IDisposable
-{
+public interface IStreamConnector : IDisposable {
     Stream Producer { get; }
     Stream Consumer { get; }
     void Reset();

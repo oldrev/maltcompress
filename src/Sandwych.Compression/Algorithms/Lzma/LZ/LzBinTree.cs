@@ -2,10 +2,8 @@
 
 using System;
 
-namespace Sandwych.Compression.Algorithms.Lzma.LZ
-{
-    public class BinTree : InWindow, IMatchFinder
-    {
+namespace Sandwych.Compression.Algorithms.Lzma.LZ {
+    public class BinTree : InWindow, IMatchFinder {
         UInt32 _cyclicBufferPos;
         UInt32 _cyclicBufferSize = 0;
         UInt32 _matchMaxLen;
@@ -31,17 +29,14 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
         UInt32 kMinMatchCheck = 4;
         UInt32 kFixHashSize = kHash2Size + kHash3Size;
 
-        public void SetType(int numHashBytes)
-        {
+        public void SetType(int numHashBytes) {
             HASH_ARRAY = (numHashBytes > 2);
-            if (HASH_ARRAY)
-            {
+            if (HASH_ARRAY) {
                 kNumHashDirectBytes = 0;
                 kMinMatchCheck = 4;
                 kFixHashSize = kHash2Size + kHash3Size;
             }
-            else
-            {
+            else {
                 kNumHashDirectBytes = 2;
                 kMinMatchCheck = 2 + 1;
                 kFixHashSize = 0;
@@ -51,8 +46,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
         public new void SetStream(System.IO.Stream stream) { base.SetStream(stream); }
         public new void ReleaseStream() { base.ReleaseStream(); }
 
-        public new void Init()
-        {
+        public new void Init() {
             base.Init();
             for (UInt32 i = 0; i < _hashSizeSum; i++)
                 _hash[i] = kEmptyHashValue;
@@ -60,8 +54,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             ReduceOffsets(-1);
         }
 
-        public new void MovePos()
-        {
+        public new void MovePos() {
             if (++_cyclicBufferPos >= _cyclicBufferSize)
                 _cyclicBufferPos = 0;
             base.MovePos();
@@ -77,8 +70,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
         public new UInt32 GetNumAvailableBytes() => base.GetNumAvailableBytes();
 
         public void Create(UInt32 historySize, UInt32 keepAddBufferBefore,
-                UInt32 matchMaxLen, UInt32 keepAddBufferAfter)
-        {
+                UInt32 matchMaxLen, UInt32 keepAddBufferAfter) {
             if (historySize > kMaxValForNormalize - 256)
                 throw new Exception();
             _cutValue = 16 + (matchMaxLen >> 1);
@@ -91,16 +83,14 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             _matchMaxLen = matchMaxLen;
 
             UInt32 cyclicBufferSize = historySize + 1;
-            if (_cyclicBufferSize != cyclicBufferSize)
-            {
+            if (_cyclicBufferSize != cyclicBufferSize) {
                 _cyclicBufferSize = cyclicBufferSize;
                 _son = new UInt32[_cyclicBufferSize * 2];
             }
 
             UInt32 hs = kBT2HashSize;
 
-            if (HASH_ARRAY)
-            {
+            if (HASH_ARRAY) {
                 hs = historySize - 1;
                 hs |= (hs >> 1);
                 hs |= (hs >> 2);
@@ -114,22 +104,18 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
                 hs++;
                 hs += kFixHashSize;
             }
-            if (hs != _hashSizeSum)
-            {
+            if (hs != _hashSizeSum) {
                 _hash = new UInt32[_hashSizeSum = hs];
             }
         }
 
-        public UInt32 GetMatches(UInt32[] distances)
-        {
+        public UInt32 GetMatches(UInt32[] distances) {
             UInt32 lenLimit;
             if (Pos + _matchMaxLen <= StreamPos)
                 lenLimit = _matchMaxLen;
-            else
-            {
+            else {
                 lenLimit = StreamPos - Pos;
-                if (lenLimit < kMinMatchCheck)
-                {
+                if (lenLimit < kMinMatchCheck) {
                     MovePos();
                     return 0;
                 }
@@ -141,8 +127,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             UInt32 maxLen = kStartMaxLen; // to avoid items for len < hashSize;
             UInt32 hashValue, hash2Value = 0, hash3Value = 0;
 
-            if (HASH_ARRAY)
-            {
+            if (HASH_ARRAY) {
                 UInt32 temp = CRC.Table[BufferBase[cur]] ^ BufferBase[cur + 1];
                 hash2Value = temp & (kHash2Size - 1);
                 temp ^= ((UInt32)(BufferBase[cur + 2]) << 8);
@@ -153,29 +138,25 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
                 hashValue = BufferBase[cur] ^ ((UInt32)(BufferBase[cur + 1]) << 8);
 
             UInt32 curMatch = _hash[kFixHashSize + hashValue];
-            if (HASH_ARRAY)
-            {
+            if (HASH_ARRAY) {
                 UInt32 curMatch2 = _hash[hash2Value];
                 UInt32 curMatch3 = _hash[kHash3Offset + hash3Value];
                 _hash[hash2Value] = Pos;
                 _hash[kHash3Offset + hash3Value] = Pos;
                 if (curMatch2 > matchMinPos)
-                    if (BufferBase[BufferOffset + curMatch2] == BufferBase[cur])
-                    {
+                    if (BufferBase[BufferOffset + curMatch2] == BufferBase[cur]) {
                         distances[offset++] = maxLen = 2;
                         distances[offset++] = Pos - curMatch2 - 1;
                     }
                 if (curMatch3 > matchMinPos)
-                    if (BufferBase[BufferOffset + curMatch3] == BufferBase[cur])
-                    {
+                    if (BufferBase[BufferOffset + curMatch3] == BufferBase[cur]) {
                         if (curMatch3 == curMatch2)
                             offset -= 2;
                         distances[offset++] = maxLen = 3;
                         distances[offset++] = Pos - curMatch3 - 1;
                         curMatch2 = curMatch3;
                     }
-                if (offset != 0 && curMatch2 == curMatch)
-                {
+                if (offset != 0 && curMatch2 == curMatch) {
                     offset -= 2;
                     maxLen = kStartMaxLen;
                 }
@@ -189,13 +170,10 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             UInt32 len0, len1;
             len0 = len1 = kNumHashDirectBytes;
 
-            if (kNumHashDirectBytes != 0)
-            {
-                if (curMatch > matchMinPos)
-                {
+            if (kNumHashDirectBytes != 0) {
+                if (curMatch > matchMinPos) {
                     if (BufferBase[BufferOffset + curMatch + kNumHashDirectBytes] !=
-                            BufferBase[cur + kNumHashDirectBytes])
-                    {
+                            BufferBase[cur + kNumHashDirectBytes]) {
                         distances[offset++] = maxLen = kNumHashDirectBytes;
                         distances[offset++] = Pos - curMatch - 1;
                     }
@@ -204,10 +182,8 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
 
             UInt32 count = _cutValue;
 
-            while (true)
-            {
-                if (curMatch <= matchMinPos || count-- == 0)
-                {
+            while (true) {
+                if (curMatch <= matchMinPos || count-- == 0) {
                     _son[ptr0] = _son[ptr1] = kEmptyHashValue;
                     break;
                 }
@@ -218,32 +194,27 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
 
                 UInt32 pby1 = BufferOffset + curMatch;
                 UInt32 len = Math.Min(len0, len1);
-                if (BufferBase[pby1 + len] == BufferBase[cur + len])
-                {
+                if (BufferBase[pby1 + len] == BufferBase[cur + len]) {
                     while (++len != lenLimit)
                         if (BufferBase[pby1 + len] != BufferBase[cur + len])
                             break;
-                    if (maxLen < len)
-                    {
+                    if (maxLen < len) {
                         distances[offset++] = maxLen = len;
                         distances[offset++] = delta - 1;
-                        if (len == lenLimit)
-                        {
+                        if (len == lenLimit) {
                             _son[ptr1] = _son[cyclicPos];
                             _son[ptr0] = _son[cyclicPos + 1];
                             break;
                         }
                     }
                 }
-                if (BufferBase[pby1 + len] < BufferBase[cur + len])
-                {
+                if (BufferBase[pby1 + len] < BufferBase[cur + len]) {
                     _son[ptr1] = curMatch;
                     ptr1 = cyclicPos + 1;
                     curMatch = _son[ptr1];
                     len1 = len;
                 }
-                else
-                {
+                else {
                     _son[ptr0] = curMatch;
                     ptr0 = cyclicPos;
                     curMatch = _son[ptr0];
@@ -254,18 +225,14 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             return offset;
         }
 
-        public void Skip(UInt32 num)
-        {
-            do
-            {
+        public void Skip(UInt32 num) {
+            do {
                 UInt32 lenLimit;
                 if (Pos + _matchMaxLen <= StreamPos)
                     lenLimit = _matchMaxLen;
-                else
-                {
+                else {
                     lenLimit = StreamPos - Pos;
-                    if (lenLimit < kMinMatchCheck)
-                    {
+                    if (lenLimit < kMinMatchCheck) {
                         MovePos();
                         continue;
                     }
@@ -276,8 +243,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
 
                 UInt32 hashValue;
 
-                if (HASH_ARRAY)
-                {
+                if (HASH_ARRAY) {
                     UInt32 temp = CRC.Table[BufferBase[cur]] ^ BufferBase[cur + 1];
                     UInt32 hash2Value = temp & (kHash2Size - 1);
                     _hash[hash2Value] = Pos;
@@ -299,10 +265,8 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
                 len0 = len1 = kNumHashDirectBytes;
 
                 UInt32 count = _cutValue;
-                while (true)
-                {
-                    if (curMatch <= matchMinPos || count-- == 0)
-                    {
+                while (true) {
+                    if (curMatch <= matchMinPos || count-- == 0) {
                         _son[ptr0] = _son[ptr1] = kEmptyHashValue;
                         break;
                     }
@@ -314,27 +278,23 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
 
                     UInt32 pby1 = BufferOffset + curMatch;
                     UInt32 len = Math.Min(len0, len1);
-                    if (BufferBase[pby1 + len] == BufferBase[cur + len])
-                    {
+                    if (BufferBase[pby1 + len] == BufferBase[cur + len]) {
                         while (++len != lenLimit)
                             if (BufferBase[pby1 + len] != BufferBase[cur + len])
                                 break;
-                        if (len == lenLimit)
-                        {
+                        if (len == lenLimit) {
                             _son[ptr1] = _son[cyclicPos];
                             _son[ptr0] = _son[cyclicPos + 1];
                             break;
                         }
                     }
-                    if (BufferBase[pby1 + len] < BufferBase[cur + len])
-                    {
+                    if (BufferBase[pby1 + len] < BufferBase[cur + len]) {
                         _son[ptr1] = curMatch;
                         ptr1 = cyclicPos + 1;
                         curMatch = _son[ptr1];
                         len1 = len;
                     }
-                    else
-                    {
+                    else {
                         _son[ptr0] = curMatch;
                         ptr0 = cyclicPos;
                         curMatch = _son[ptr0];
@@ -346,10 +306,8 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             while (--num != 0);
         }
 
-        void NormalizeLinks(UInt32[] items, UInt32 numItems, UInt32 subValue)
-        {
-            for (UInt32 i = 0; i < numItems; i++)
-            {
+        void NormalizeLinks(UInt32[] items, UInt32 numItems, UInt32 subValue) {
+            for (UInt32 i = 0; i < numItems; i++) {
                 UInt32 value = items[i];
                 if (value <= subValue)
                     value = kEmptyHashValue;
@@ -359,8 +317,7 @@ namespace Sandwych.Compression.Algorithms.Lzma.LZ
             }
         }
 
-        void Normalize()
-        {
+        void Normalize() {
             UInt32 subValue = Pos - _cyclicBufferSize;
             NormalizeLinks(_son, _cyclicBufferSize * 2, subValue);
             NormalizeLinks(_hash, _hashSizeSum, subValue);

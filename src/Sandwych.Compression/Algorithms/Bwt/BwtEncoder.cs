@@ -1,4 +1,4 @@
-﻿// https://gist.github.com/Lordron/5039958
+// https://gist.github.com/Lordron/5039958
 
 using System;
 using System.Collections.Generic;
@@ -8,13 +8,11 @@ using Sandwych.Compression.Algorithms;
 
 namespace Sandwych.Compression.Algorithms.Bwt;
 
-public class BwtEncoder : AbstractCoder
-{
+public class BwtEncoder : AbstractCoder {
     public const int DefaultBlockSize = 1024 * 1024 * 2;
     private int[] _bucket;
 
-    public override void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null)
-    {
+    public override void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodingProgress progress = null) {
         var inBuf = new byte[DefaultBlockSize];
         var outBuf = new byte[inBuf.Length];
         _bucket = new int[inBuf.Length];
@@ -22,22 +20,19 @@ public class BwtEncoder : AbstractCoder
         for (; ; )
         {
             var nRead = inStream.Read(inBuf, 0, inBuf.Length);
-            if (nRead == 0)
-            {
+            if (nRead == 0) {
                 break;
             }
             processedSize += nRead;
             var primaryIndex = this.EncodeBlock(inBuf, outBuf, nRead);
             outStream.Write(outBuf, 0, nRead);
-            if (progress != null)
-            {
+            if (progress != null) {
                 progress.Report(new CodingProgressInfo(processedSize, processedSize));
             }
         }
     }
 
-    private int EncodeBlock(byte[] buf_in, byte[] buf_out, int size)
-    {
+    private int EncodeBlock(byte[] buf_in, byte[] buf_out, int size) {
         return SuffixArrayOld.Bwt(buf_in, buf_out, _bucket, buf_in.Length);
     }
 }
