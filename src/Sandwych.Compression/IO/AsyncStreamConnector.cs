@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -80,7 +81,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             _downStreamClosed = true;
         }
 
-        throw new IOException("Writing was cut");
+        Debug.WriteLine("Writing was cut");
     }
 
     public async ValueTask<int> ConsumeAsync(Memory<byte> buffer, CancellationToken cancel) {
@@ -89,40 +90,30 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         }
 
         var count = buffer.Length;
-        var offset = 0;
-        var consumerDesiredSize = count;
-        var nRead = 0;
 
         if (buffer.Length <= 0) {
             return 0;
         }
 
-        while (nRead < consumerDesiredSize) {
-            if (_waitProducer) {
-                await _canConsumeEvent.WaitAsync();
-                _waitProducer = false;
-            }
+        if (_waitProducer) {
+            await _canConsumeEvent.WaitAsync();
+            _waitProducer = false;
+        }
 
-            count = Math.Min(consumerDesiredSize - nRead, _bufferSize);
-            if (count > 0) {
-                _buffer.Span.Slice(_bufferOffset, count).CopyTo(buffer.Span);
-                offset += count;
-                _bufferOffset += count;
-                _bufferSize -= count;
-                nRead += count;
-                this.ProcessedLength += nRead;
+        if (count > _bufferSize) {
+            count = _bufferSize;
+        }
 
-                //下游已读取完毕，可以允许上游流写入了
-                if (_bufferSize == 0) {
-                    _waitProducer = true;
-                    _canProduceSempahore.Release();
-                }
-            }
-            else if (count == 0) {
-                break;
-            }
-            else {
-                throw new InvalidOperationException();
+        if (count > 0) {
+            _buffer.Slice(_bufferOffset, count).CopyTo(buffer);
+            _bufferOffset += count;
+            _bufferSize -= count;
+            this.ProcessedLength += count;
+
+            //下游已读取完毕，可以允许上游流写入了
+            if (_bufferSize == 0) {
+                _waitProducer = true;
+                _canProduceSempahore.Release();
             }
         }
         return count;
