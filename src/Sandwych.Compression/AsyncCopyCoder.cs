@@ -17,13 +17,12 @@ public sealed class AsyncCopyCoder : AbstractAsyncCoder {
         long processedSize = 0;
         for (; ; )
         {
-            var inBuf = new Memory<byte>(_buffer.Value);
-            var nRead = await inStream.ReadAsync(inBuf);
+            var buf = new Memory<byte>(_buffer.Value);
+            var nRead = await inStream.ReadAsync(buf).ConfigureAwait(false);
             if (nRead == 0) {
                 break;
             }
-            var outBuf = new Memory<byte>(_buffer.Value, 0, nRead);
-            await outStream.WriteAsync(outBuf);
+            await outStream.WriteAsync(buf).ConfigureAwait(false);
             processedSize += nRead;
             if (progress != null) {
                 progress.Report(new CodingProgressInfo(processedSize, processedSize));

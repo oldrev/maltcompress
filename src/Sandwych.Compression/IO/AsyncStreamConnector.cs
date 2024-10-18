@@ -15,7 +15,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
     private readonly SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(0, 3);
 
     private volatile bool _downStreamClosed = false;
-    private volatile bool _waitProducer = false;
+    private volatile bool _waitProducer = true;
     private ReadOnlyMemory<byte> _buffer;
     private bool _disposed = false;
     // private readonly WaitHandle[] _producerWaitHandles;
@@ -67,7 +67,8 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             //通知下游执行
             _canConsumeEvent.Set();
 
-            await _canProduceSempahore.WaitAsync(cancel);
+            await _canProduceSempahore.WaitAsync(cancel).ConfigureAwait(false);
+            Debug.WriteLine("ProduceAsync go");
 
             count -= _buffer.Length;
             if (count > 0) {
@@ -92,13 +93,14 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         }
 
         if (_waitProducer) {
-            await _canConsumeEvent.WaitAsync();
+            await _canConsumeEvent.WaitAsync().ConfigureAwait(false);
             _waitProducer = false;
         }
 
         count = Math.Min(count, _buffer.Length); 
 
         if (count > 0) {
+            Debug.WriteLine("ConsumeAsync go");
             _buffer.Slice(0, count).CopyTo(buffer);
             _buffer = _buffer.Slice(count, _buffer.Length - count);
             this.ProcessedLength += count;

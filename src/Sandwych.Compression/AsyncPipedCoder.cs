@@ -95,12 +95,12 @@ public class AsyncPipedCoder<TConnector> : AbstractAsyncCoder, IAsyncDisposable
             this.CreateAllCodingTasks(inStream, outStream, inSize, outSize);
 
             var tasks = _tasks.Select(x => x.AsTask()).ToArray();
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
             //var allFinishedEvents = _tasks.Select(t => t.Info.FinishedEvent.WaitHandle).ToArray();
             //WaitHandle.WaitAll(allFinishedEvents);
         }
         else {
-            await _coders.First().CodeAsync(inStream, outStream, inSize, outSize, progress);
+            await _coders.First().CodeAsync(inStream, outStream, inSize, outSize, progress).ConfigureAwait(false);
         }
     }
 
@@ -137,7 +137,7 @@ public class AsyncPipedCoder<TConnector> : AbstractAsyncCoder, IAsyncDisposable
             if (!_disposed) {
                 if (_connections != null && _connections.Count > 0) {
                     foreach (var connector in _connections) {
-                        await connector.DisposeAsync();
+                        await connector.DisposeAsync().ConfigureAwait(false);
                     }
                 }
             }
