@@ -10,15 +10,13 @@ using DotNext.Threading;
 namespace Sandwych.Compression.IO;
 
 public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
-    private AsyncManualResetEvent _canConsumeEvent = new AsyncManualResetEvent(false);
+    private readonly AsyncManualResetEvent _canConsumeEvent = new AsyncManualResetEvent(false);
 
-    private SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(3);
+    private readonly SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(0, 3);
 
     private volatile bool _downStreamClosed = false;
     private volatile bool _waitProducer = false;
     private ReadOnlyMemory<byte> _buffer;
-    private volatile int _bufferOffset = 0;
-    private volatile int _bufferSize = 0;
     private bool _disposed = false;
     // private readonly WaitHandle[] _producerWaitHandles;
     private readonly AsyncProducerStream _producerStream;
@@ -37,13 +35,13 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
         }
 
         _canConsumeEvent.Reset();
-        _canProduceSempahore.Release();
+        if (_canProduceSempahore.CurrentCount > 0) {
+            _canProduceSempahore.Release(_canProduceSempahore.CurrentCount);
+        }
 
         _downStreamClosed = false;
         _waitProducer = true;
-        _buffer = null;
-        _bufferOffset = 0;
-        _bufferSize = 0;
+        _buffer = ReadOnlyMemory<byte>.Empty;
         this.ProcessedLength = 0;
     }
 
@@ -62,18 +60,16 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             return;
         }
 
-        int count = buffer.Length;
         if (!_downStreamClosed) {
             _buffer = buffer;
-            _bufferOffset = 0;
-            _bufferSize = buffer.Length;
+            var count = buffer.Length;
 
             //通知下游执行
             _canConsumeEvent.Set();
 
-            await _canProduceSempahore.WaitAsync();
+            await _canProduceSempahore.WaitAsync(cancel);
 
-            count -= _bufferSize;
+            count -= _buffer.Length;
             if (count > 0) {
                 return;
             }
@@ -81,7 +77,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             _downStreamClosed = true;
         }
 
-        Debug.WriteLine("Writing was cut");
+        throw new InvalidOperationException("Writing was cut");
     }
 
     public async ValueTask<int> ConsumeAsync(Memory<byte> buffer, CancellationToken cancel) {
@@ -100,18 +96,15 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             _waitProducer = false;
         }
 
-        if (count > _bufferSize) {
-            count = _bufferSize;
-        }
+        count = Math.Min(count, _buffer.Length); 
 
         if (count > 0) {
-            _buffer.Slice(_bufferOffset, count).CopyTo(buffer);
-            _bufferOffset += count;
-            _bufferSize -= count;
+            _buffer.Slice(0, count).CopyTo(buffer);
+            _buffer = _buffer.Slice(count, _buffer.Length - count);
             this.ProcessedLength += count;
 
             //下游已读取完毕，可以允许上游流写入了
-            if (_bufferSize == 0) {
+            if (_buffer.Length == 0) {
                 _waitProducer = true;
                 _canProduceSempahore.Release();
             }
@@ -159,8 +152,7 @@ public class AsyncStreamConnector : IAsyncStreamConnector, IAsyncDisposable {
             throw new ObjectDisposedException(nameof(AsyncStreamConnector));
         }
 
-        _buffer = null;
-        _bufferSize = 0;
+        _buffer = ReadOnlyMemory<byte>.Empty;
         _canConsumeEvent.Set();
         return ValueTask.CompletedTask;
     }

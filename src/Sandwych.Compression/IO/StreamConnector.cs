@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace Sandwych.Compression.IO;
 
 public class StreamConnector : IStreamConnector {
-    private ManualResetEventSlim _canConsumeEvent = new ManualResetEventSlim(false);
+    private readonly ManualResetEventSlim _canConsumeEvent = new ManualResetEventSlim(false);
 
-    private SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(3);
+    private readonly SemaphoreSlim _canProduceSempahore = new SemaphoreSlim(0, 3);
 
     private volatile bool _downStreamClosed = false;
     private volatile bool _waitProducer = false;

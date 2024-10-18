@@ -71,7 +71,7 @@ internal class AsyncProducerStream : AbstractAsyncPipedStream {
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
         throw new NotSupportedException();
 
-    protected override void Dispose(bool disposing) =>
+    public override ValueTask DisposeAsync() =>
         this.Connector.ProducerDisposedAsync();
 
 }

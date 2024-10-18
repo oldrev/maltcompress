@@ -42,6 +42,6 @@ internal class AsyncConsumerStream : AbstractAsyncPipedStream {
     public override void Write(byte[] buffer, int offset, int count) =>
         throw new NotSupportedException();
 
-    protected override void Dispose(bool disposing) =>
+    public override ValueTask DisposeAsync() =>
         this.Connector.ConsumerDisposedAsync();
 }

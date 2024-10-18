@@ -113,7 +113,7 @@ public class AsyncPipedCoder<TConnector> : AbstractAsyncCoder, IAsyncDisposable
         _tasks.Add(_coders.Last().CodeAsync(_connections.Last().Consumer, outStream, inSize, outSize, new ProcessedInSizeCodingProgress(this)));
 
         if (_connections.Count > 1) {
-            var coders = _coders.Skip(1).Take(_coders.Count() - 2); //removed head and tail
+            var coders = _coders.Skip(1).Take(_coders.Length - 2); //removed head and tail
             var connectorIndex = 0;
             foreach (var coder in coders) {
                 var connector = _connections[connectorIndex];
